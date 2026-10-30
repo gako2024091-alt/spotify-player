@@ -2,83 +2,256 @@
 <html lang="ja">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>プレイリスト再生試作</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#121212">
+<title>プレイリスト再生</title>
 <style>
-  :root { --bg:#121212; --panel:#1e1e1e; --text:#f2f2f2; --sub:#a7a7a7; --accent:#1ed760; }
-  * { box-sizing:border-box; }
-  body { margin:0; font-family:-apple-system, "Hiragino Sans", sans-serif; background:var(--bg); color:var(--text); }
-  main { max-width:640px; margin:0 auto; padding:24px 16px; }
-  h1 { font-size:20px; margin:0 0 16px; }
-  section { background:var(--panel); border-radius:12px; padding:16px; margin-bottom:16px; }
-  label { display:block; font-size:13px; color:var(--sub); margin-bottom:6px; }
-  input { width:100%; padding:10px; border-radius:8px; border:1px solid #333; background:#000; color:var(--text); font-size:15px; }
-  button { padding:12px 18px; border:none; border-radius:999px; background:var(--accent); color:#000; font-weight:bold; font-size:15px; cursor:pointer; margin-top:10px; }
-  button.secondary { background:#333; color:var(--text); }
-  .row { display:flex; gap:8px; flex-wrap:wrap; }
-  #now { display:flex; gap:14px; align-items:center; }
-  #cover { width:96px; height:96px; border-radius:8px; background:#333; object-fit:cover; }
-  #title { font-weight:bold; }
-  #artist { color:var(--sub); font-size:14px; }
-  #log { font-size:12px; color:var(--sub); white-space:pre-wrap; }
-  .hidden { display:none; }
+  :root {
+    --bg:#121212; --panel:rgba(255,255,255,.07); --panel-strong:rgba(255,255,255,.12);
+    --text:#f5f5f5; --sub:#b3b3b3; --accent:#1ed760; --accent-dim:#169c46;
+    --tint:#2a2a2a; /* ジャケットの色で変わる */
+  }
+  * { box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  html,body { height:100%; }
+  body {
+    margin:0; color:var(--text); background:var(--bg);
+    font-family:-apple-system,"Hiragino Sans","Yu Gothic UI","Noto Sans JP",sans-serif;
+    background-image:linear-gradient(180deg,var(--tint) 0%,var(--bg) 70%);
+    background-attachment:fixed; transition:background-color .6s;
+  }
+  button { font:inherit; color:inherit; background:none; border:none; cursor:pointer; padding:0; }
+  button:focus-visible, input:focus-visible, summary:focus-visible { outline:2px solid var(--accent); outline-offset:3px; border-radius:8px; }
+  svg { display:block; fill:currentColor; }
+  .hidden { display:none !important; }
+
+  main { max-width:520px; margin:0 auto; min-height:100%; padding:max(16px,env(safe-area-inset-top)) 20px max(24px,env(safe-area-inset-bottom)); display:flex; flex-direction:column; gap:18px; }
+
+  /* 上部バー */
+  .topbar { display:flex; align-items:center; justify-content:space-between; gap:8px; }
+  .topbar h1 { font-size:13px; font-weight:600; letter-spacing:.08em; color:var(--sub); margin:0; }
+  .icon-btn { width:44px; height:44px; border-radius:50%; display:grid; place-items:center; color:var(--sub); transition:background .15s,color .15s; }
+  .icon-btn:hover { background:var(--panel); color:var(--text); }
+  .icon-btn svg { width:22px; height:22px; }
+
+  /* ログイン画面 */
+  #setup { margin:auto 0; text-align:center; display:flex; flex-direction:column; gap:20px; align-items:center; }
+  #setup .logo { width:88px; height:88px; border-radius:24px; background:var(--panel-strong); display:grid; place-items:center; color:var(--accent); }
+  #setup .logo svg { width:44px; height:44px; }
+  #setup p { margin:0; color:var(--sub); font-size:14px; line-height:1.7; }
+  .primary { background:var(--accent); color:#000; font-weight:700; border-radius:999px; padding:14px 28px; font-size:16px; min-height:48px; transition:transform .1s,background .15s; }
+  .primary:hover { background:#3ee47a; }
+  .primary:active { transform:scale(.97); }
+  .ghost { background:var(--panel-strong); border-radius:999px; padding:10px 18px; font-size:14px; min-height:44px; }
+  .ghost:hover { background:rgba(255,255,255,.2); }
+
+  details.fold { width:100%; text-align:left; background:var(--panel); border-radius:14px; padding:4px 14px; }
+  details.fold summary { color:var(--sub); font-size:13px; padding:12px 0; cursor:pointer; list-style:none; }
+  details.fold summary::-webkit-details-marker { display:none; }
+  details.fold[open] summary { color:var(--text); }
+  details.fold .body { padding:0 0 14px; display:flex; flex-direction:column; gap:10px; }
+  .note { font-size:12px; color:var(--sub); line-height:1.6; margin:0; }
+  .field { width:100%; padding:12px 14px; border-radius:12px; border:1px solid transparent; background:rgba(0,0,0,.45); color:var(--text); font-size:16px; }
+  .field:focus { border-color:var(--accent); outline:none; }
+
+  /* プレイヤー */
+  #playerArea { display:flex; flex-direction:column; gap:18px; flex:1; }
+  .cover-wrap { width:100%; aspect-ratio:1/1; max-height:52vh; margin:0 auto; border-radius:14px; overflow:hidden; background:var(--tint); box-shadow:0 18px 40px rgba(0,0,0,.5); display:grid; place-items:center; transition:transform .3s; }
+  .cover-wrap.paused { transform:scale(.92); }
+  #cover { width:100%; height:100%; object-fit:cover; display:block; }
+  #cover[src=""], #cover:not([src]) { visibility:hidden; }
+  .cover-wrap .ph { position:absolute; color:var(--sub); }
+
+  .meta { display:flex; flex-direction:column; gap:4px; min-height:56px; }
+  #title { font-size:22px; font-weight:700; line-height:1.3; overflow:hidden; text-overflow:ellipsis; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; }
+  #artist { color:var(--sub); font-size:15px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+
+  /* 進行バー */
+  .seek { display:flex; flex-direction:column; gap:6px; }
+  .times { display:flex; justify-content:space-between; font-size:12px; color:var(--sub); font-variant-numeric:tabular-nums; }
+  input[type=range] { -webkit-appearance:none; appearance:none; width:100%; height:28px; background:transparent; cursor:pointer; margin:0; --p:0%; }
+  input[type=range]::-webkit-slider-runnable-track { height:5px; border-radius:3px; background:linear-gradient(to right,var(--text) var(--p),rgba(255,255,255,.22) var(--p)); }
+  input[type=range]::-moz-range-track { height:5px; border-radius:3px; background:rgba(255,255,255,.22); }
+  input[type=range]::-moz-range-progress { height:5px; border-radius:3px; background:var(--text); }
+  input[type=range]::-webkit-slider-thumb { -webkit-appearance:none; width:14px; height:14px; border-radius:50%; background:#fff; margin-top:-4.5px; box-shadow:0 1px 4px rgba(0,0,0,.5); }
+  input[type=range]::-moz-range-thumb { width:14px; height:14px; border:none; border-radius:50%; background:#fff; }
+  input[type=range]:hover::-webkit-slider-runnable-track { background:linear-gradient(to right,var(--accent) var(--p),rgba(255,255,255,.22) var(--p)); }
+
+  /* 操作ボタン */
+  .controls { display:flex; align-items:center; justify-content:space-between; padding:0 4px; }
+  .controls .icon-btn { width:52px; height:52px; color:var(--text); }
+  .controls .icon-btn.small { color:var(--sub); }
+  .controls .icon-btn.small.on { color:var(--accent); }
+  .controls .icon-btn svg { width:28px; height:28px; }
+  .controls .icon-btn.small svg { width:22px; height:22px; }
+  #toggleBtn { width:72px; height:72px; border-radius:50%; background:#fff; color:#000; display:grid; place-items:center; transition:transform .1s; }
+  #toggleBtn:hover { transform:scale(1.05); }
+  #toggleBtn:active { transform:scale(.96); }
+  #toggleBtn svg { width:34px; height:34px; }
+  .badge { position:relative; }
+  .badge[data-mode="track"]::after { content:"1"; position:absolute; right:10px; top:8px; font-size:10px; font-weight:700; color:var(--accent); }
+
+  .volume { display:flex; align-items:center; gap:10px; color:var(--sub); }
+  .volume svg { width:20px; height:20px; flex:none; }
+
+  /* プレイリスト選択（下から出る） */
+  #sheet { position:fixed; inset:0; z-index:10; display:flex; align-items:flex-end; justify-content:center; background:rgba(0,0,0,.6); }
+  #sheet .card { width:100%; max-width:520px; background:#1d1d1d; border-radius:20px 20px 0 0; padding:20px 20px max(24px,env(safe-area-inset-bottom)); display:flex; flex-direction:column; gap:14px; max-height:85vh; overflow:auto; animation:up .22s ease-out; }
+  @keyframes up { from { transform:translateY(40px); opacity:0; } to { transform:none; opacity:1; } }
+  #sheet h2 { margin:0; font-size:17px; }
+  .row { display:flex; gap:8px; }
+  .row .field { flex:1; }
+  .history { display:flex; flex-direction:column; gap:6px; }
+  .history button { text-align:left; padding:12px 14px; border-radius:12px; background:var(--panel); font-size:13px; color:var(--sub); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .history button:hover { background:var(--panel-strong); color:var(--text); }
+  .history .label { font-size:12px; color:var(--sub); margin-top:4px; }
+
+  /* 記録 */
+  #toast { position:fixed; left:50%; bottom:max(24px,env(safe-area-inset-bottom)); transform:translate(-50%,20px); background:#2a2a2a; color:var(--text); padding:12px 18px; border-radius:12px; font-size:13px; opacity:0; pointer-events:none; transition:.25s; max-width:90vw; z-index:20; text-align:center; }
+  #toast.show { opacity:1; transform:translate(-50%,0); }
+  details.logbox { color:var(--sub); font-size:12px; }
+  details.logbox summary { cursor:pointer; padding:8px 0; list-style:none; }
+  details.logbox summary::-webkit-details-marker { display:none; }
+  #log { white-space:pre-wrap; max-height:160px; overflow:auto; background:rgba(0,0,0,.35); padding:10px; border-radius:10px; line-height:1.6; }
+
+  .kbd { font-size:11px; color:var(--sub); text-align:center; line-height:1.8; }
+  @media (max-width:480px){ .kbd { display:none; } }
+  @media (prefers-reduced-motion: reduce){ *{ transition:none !important; animation:none !important; } }
 </style>
 </head>
 <body>
 <main>
-  <h1>プレイリスト再生（試作）</h1>
+  <div class="topbar">
+    <h1 id="topLabel">プレイリスト再生</h1>
+    <div style="display:flex;gap:4px">
+      <button class="icon-btn hidden" id="listBtn" aria-label="プレイリストを選ぶ" title="プレイリストを選ぶ (L)">
+        <svg viewBox="0 0 24 24"><path d="M3 6h13v2H3V6zm0 5h13v2H3v-2zm0 5h9v2H3v-2zm15-6v6.2A3 3 0 1 0 20 19V11h3V9h-5v1z"/></svg>
+      </button>
+      <button class="icon-btn hidden" id="menuBtn" aria-label="設定" title="設定">
+        <svg viewBox="0 0 24 24"><path d="M12 8a2 2 0 1 0 0-4 2 2 0 0 0 0 4zm0 6a2 2 0 1 0 0-4 2 2 0 0 0 0 4zm0 6a2 2 0 1 0 0-4 2 2 0 0 0 0 4z"/></svg>
+      </button>
+    </div>
+  </div>
 
+  <!-- ログイン前 -->
   <section id="setup">
-    <div class="row"><button id="loginBtn">Spotifyでログイン</button></div>
-    <details style="margin-top:16px">
-      <summary style="color:var(--sub);font-size:13px">別の端末の許可証を取り込む</summary>
-      <label for="importBox" style="margin-top:10px">別の端末で表示した許可証を貼り付け</label>
-      <input id="importBox" autocomplete="off" autocapitalize="off" spellcheck="false">
-      <div class="row"><button id="importBtn">取り込む</button></div>
-    </details>
-  </section>
-
-  <section id="playerArea" class="hidden">
-    <label for="playlist">プレイリストのURLまたはURI</label>
-    <input id="playlist" placeholder="https://open.spotify.com/playlist/...">
-    <div class="row">
-      <button id="startBtn">このページで再生</button>
-    </div>
-    <div class="row">
-      <button class="secondary" id="prevBtn">前へ</button>
-      <button class="secondary" id="toggleBtn">再生/一時停止</button>
-      <button class="secondary" id="nextBtn">次へ</button>
-      <button class="secondary" id="logoutBtn">ログアウト</button>
-    </div>
-    <details style="margin-top:16px">
-      <summary style="color:var(--sub);font-size:13px">許可証を別の端末へ持ち出す</summary>
-      <p style="font-size:13px;color:var(--sub)">この文字列はアカウントを操作できる鍵です。他人に見せず、メールやメッセージで送らないでください。持ち出した後は、この端末でログアウトしてください。</p>
-      <div class="row">
-        <button class="secondary" id="exportBtn">許可証を表示</button>
-        <button class="secondary hidden" id="copyBtn">コピー</button>
+    <div class="logo"><svg viewBox="0 0 24 24"><path d="M9 3v12.3A3.5 3.5 0 1 0 11 18.5V7.8l8-1.6v6.1A3.5 3.5 0 1 0 21 15.5V3L9 3z"/></svg></div>
+    <p>Spotifyのアカウントでログインすると、<br>お気に入りのプレイリストをこのページで再生できます。<br>（再生にはSpotify Premiumが必要です）</p>
+    <button class="primary" id="loginBtn">Spotifyでログイン</button>
+    <details class="fold">
+      <summary>別の端末の許可証を取り込む</summary>
+      <div class="body">
+        <label for="importBox" class="note">別の端末で表示した許可証を貼り付けてください。</label>
+        <input id="importBox" class="field" autocomplete="off" autocapitalize="off" spellcheck="false">
+        <button class="ghost" id="importBtn">取り込む</button>
       </div>
-      <input id="exportBox" class="hidden" readonly style="margin-top:10px">
     </details>
   </section>
 
-  <section>
-    <div id="now">
-      <img id="cover" alt="">
-      <div><div id="title">停止中</div><div id="artist"></div></div>
+  <!-- ログイン後 -->
+  <section id="playerArea" class="hidden">
+    <div class="cover-wrap paused" id="coverWrap">
+      <img id="cover" alt="アルバムのジャケット画像" crossorigin="anonymous">
     </div>
-  </section>
 
-  <section><div id="log"></div></section>
+    <div class="meta">
+      <div id="title">プレイリストを選んでください</div>
+      <div id="artist">右上の一覧ボタンから選べます</div>
+    </div>
+
+    <div class="seek">
+      <input type="range" id="seekBar" min="0" max="1000" value="0" aria-label="再生位置" disabled>
+      <div class="times"><span id="posText">0:00</span><span id="durText">0:00</span></div>
+    </div>
+
+    <div class="controls">
+      <button class="icon-btn small" id="shuffleBtn" aria-label="シャッフル" aria-pressed="false" title="シャッフル (S)">
+        <svg viewBox="0 0 24 24"><path d="M17 3l4 4-4 4V8h-2.6l-3.1 4.4L8.5 16H3v-2h4.5l2.9-4-2.9-4H3V4h5.5l3.1 4.4L14.4 6H17V3zm0 10l4 4-4 4v-3h-2.6l-2.2-3.1 1.2-1.7L14.4 15H17v-2z"/></svg>
+      </button>
+      <button class="icon-btn" id="prevBtn" aria-label="前の曲" title="前へ (P)">
+        <svg viewBox="0 0 24 24"><path d="M6 5h2v14H6V5zm3.5 7L19 5v14l-9.5-7z"/></svg>
+      </button>
+      <button id="toggleBtn" aria-label="再生" title="再生/一時停止 (スペース)">
+        <svg id="icoPlay" viewBox="0 0 24 24"><path d="M8 5v14l11-7L8 5z"/></svg>
+        <svg id="icoPause" class="hidden" viewBox="0 0 24 24"><path d="M6 5h4v14H6V5zm8 0h4v14h-4V5z"/></svg>
+      </button>
+      <button class="icon-btn" id="nextBtn" aria-label="次の曲" title="次へ (N)">
+        <svg viewBox="0 0 24 24"><path d="M16 5h2v14h-2V5zM5 19V5l9.5 7L5 19z"/></svg>
+      </button>
+      <button class="icon-btn small badge" id="repeatBtn" aria-label="繰り返し" data-mode="off" title="繰り返し (R)">
+        <svg viewBox="0 0 24 24"><path d="M7 7h10v3l4-4-4-4v3H5v6h2V7zm10 10H7v-3l-4 4 4 4v-3h12v-6h-2v4z"/></svg>
+      </button>
+    </div>
+
+    <div class="volume">
+      <button class="icon-btn" id="muteBtn" aria-label="消音の切り替え" style="width:36px;height:36px" title="消音 (M)">
+        <svg viewBox="0 0 24 24" id="icoVol"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3A4.5 4.5 0 0 0 14 8v8a4.5 4.5 0 0 0 2.5-4zM14 3.2v2.1a7 7 0 0 1 0 13.4v2.1a9 9 0 0 0 0-17.6z"/></svg>
+      </button>
+      <input type="range" id="volBar" min="0" max="100" value="80" aria-label="音量">
+    </div>
+
+    <div class="kbd">スペース：再生/停止　←　→：10秒移動　N：次　P：前　S：シャッフル　R：繰り返し　L：プレイリスト</div>
+
+    <details class="logbox">
+      <summary>動作の記録を見る</summary>
+      <div id="log"></div>
+    </details>
+  </section>
 </main>
+
+<!-- プレイリスト選択 -->
+<div id="sheet" class="hidden" role="dialog" aria-modal="true" aria-label="プレイリストを選ぶ">
+  <div class="card">
+    <h2>プレイリストを選ぶ</h2>
+    <div class="row">
+      <input id="playlist" class="field" placeholder="https://open.spotify.com/playlist/..." autocomplete="off" autocapitalize="off" spellcheck="false" aria-label="プレイリストのURLまたはURI">
+    </div>
+    <button class="primary" id="startBtn">このページで再生</button>
+    <div class="history" id="history"></div>
+    <button class="ghost" id="closeSheet">閉じる</button>
+  </div>
+</div>
+
+<!-- 設定（許可証・ログアウト） -->
+<div id="menu" class="hidden" style="position:fixed;inset:0;z-index:10;display:flex;align-items:flex-end;justify-content:center;background:rgba(0,0,0,.6)" role="dialog" aria-modal="true" aria-label="設定">
+  <div class="card" style="width:100%;max-width:520px;background:#1d1d1d;border-radius:20px 20px 0 0;padding:20px 20px max(24px,env(safe-area-inset-bottom));display:flex;flex-direction:column;gap:14px;max-height:85vh;overflow:auto">
+    <h2 style="margin:0;font-size:17px">設定</h2>
+    <details class="fold">
+      <summary>許可証を別の端末へ持ち出す</summary>
+      <div class="body">
+        <p class="note">この文字列はアカウントを操作できる鍵です。他人に見せず、メールやメッセージで送らないでください。持ち出した後は、この端末でログアウトしてください。</p>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="ghost" id="exportBtn">許可証を表示</button>
+          <button class="ghost hidden" id="copyBtn">コピー</button>
+        </div>
+        <input id="exportBox" class="field hidden" readonly>
+      </div>
+    </details>
+    <button class="ghost" id="logoutBtn">ログアウト</button>
+    <button class="ghost" id="closeMenu">閉じる</button>
+  </div>
+</div>
+
+<div id="toast" role="status" aria-live="polite"></div>
 
 <script>
 // ---- 設定 ----
 // ここに開発者画面の Client ID を貼り付ける（秘密情報ではないので公開しても問題ない）
-const CLIENT_ID = "5484c6056ebd41dc8fd68af0e1972e5f";
+const CLIENT_ID = "ここにClient IDを貼り付け";
 const SCOPES = "streaming user-read-email user-read-private user-read-playback-state user-modify-playback-state";
 const REDIRECT_URI = location.origin + location.pathname; // 開発者画面にこれと同じ値を登録する
 const $ = id => document.getElementById(id);
-const log = msg => { $("log").textContent = new Date().toLocaleTimeString() + " " + msg + "\n" + $("log").textContent; };
+
+const logLines = [];
+const log = msg => {
+  logLines.unshift(new Date().toLocaleTimeString() + " " + msg);
+  $("log").textContent = logLines.slice(0,60).join("\n");
+  toast(msg);
+};
+let toastTimer;
+function toast(msg){
+  const t = $("toast"); t.textContent = msg; t.classList.add("show");
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove("show"), 3200);
+}
 
 // 保存（ブラウザによっては使えないため例外を握りつぶす）
 const store = {
@@ -143,6 +316,25 @@ function toUri(input){
   return m ? "spotify:playlist:" + m[1] : null;
 }
 
+// 履歴（最近使ったプレイリスト）
+function getHistory(){ try { return JSON.parse(store.get("history") || "[]"); } catch(e){ return []; } }
+function addHistory(v){
+  const list = [v, ...getHistory().filter(x => x !== v)].slice(0,6);
+  store.set("history", JSON.stringify(list));
+  renderHistory();
+}
+function renderHistory(){
+  const box = $("history"); box.textContent = "";
+  const list = getHistory();
+  if(!list.length) return;
+  const lab = document.createElement("div"); lab.className = "label"; lab.textContent = "最近使ったもの"; box.appendChild(lab);
+  list.forEach(v => {
+    const b = document.createElement("button"); b.textContent = v;
+    b.onclick = () => { $("playlist").value = v; startPlayback(); };
+    box.appendChild(b);
+  });
+}
+
 // ---- 再生 ----
 let player = null, deviceId = null, sdkReady = false;
 window.onSpotifyWebPlaybackSDKReady = () => { sdkReady = true; };
@@ -150,17 +342,19 @@ window.onSpotifyWebPlaybackSDKReady = () => { sdkReady = true; };
 async function startPlayback(){
   const uri = toUri($("playlist").value);
   if(!uri){ log("プレイリストのURLを確認してください"); return; }
-  store.set("lastPlaylist", $("playlist").value.trim());
+  const raw = $("playlist").value.trim();
+  store.set("lastPlaylist", raw); addHistory(raw);
   if(!sdkReady){ log("再生部品の読み込み中です。数秒後にもう一度押してください"); return; }
+  closeSheets();
 
   // iOS対策：プレーヤーの生成と有効化は、必ずボタン操作の中で行う
   if(!player){
-    player = new Spotify.Player({ name:"自作プレーヤー", getOAuthToken: cb => getToken().then(cb).catch(e => log(e.message)), volume:0.8 });
+    player = new Spotify.Player({ name:"自作プレーヤー", getOAuthToken: cb => getToken().then(cb).catch(e => log(e.message)), volume:Number($("volBar").value)/100 });
     player.activateElement();
     player.addListener("ready", ({ device_id }) => { deviceId = device_id; log("再生準備完了"); playUri(uri); });
     player.addListener("not_ready", () => log("接続が切れました"));
     player.addListener("player_state_changed", showState);
-    player.addListener("autoplay_failed", () => log("自動再生が止められました。再生/一時停止を押してください"));
+    player.addListener("autoplay_failed", () => log("自動再生が止められました。再生ボタンを押してください"));
     ["initialization_error","authentication_error","account_error","playback_error"].forEach(ev =>
       player.addListener(ev, ({ message }) => log(ev + ": " + message)));
     await player.connect();
@@ -177,20 +371,149 @@ async function playUri(uri){
   });
   if(!res.ok){ log("再生開始に失敗: " + res.status + " " + await res.text()); }
 }
+async function api(path){
+  if(!deviceId) return;
+  const sep = path.includes("?") ? "&" : "?";
+  const res = await fetch("https://api.spotify.com/v1/me/player/" + path + sep + "device_id=" + deviceId, {
+    method:"PUT", headers:{ Authorization:"Bearer " + await getToken() }
+  });
+  if(!res.ok) log("操作に失敗: " + res.status);
+}
+
+// ---- 表示の更新 ----
+let pos = 0, dur = 0, paused = true, stamp = 0, dragging = false, lastCover = "";
+const fmt = ms => { const s = Math.max(0, Math.floor(ms/1000)); return Math.floor(s/60) + ":" + String(s%60).padStart(2,"0"); };
+function setRange(el){ el.style.setProperty("--p", (el.value / el.max * 100) + "%"); }
+
 function showState(state){
   if(!state) return;
   const t = state.track_window.current_track;
-  $("title").textContent = t.name + (state.paused ? "（一時停止中）" : "");
+  pos = state.position; dur = state.duration; paused = state.paused; stamp = performance.now();
+  $("title").textContent = t.name;
   $("artist").textContent = t.artists.map(a => a.name).join(", ");
-  $("cover").src = t.album.images[0]?.url || "";
+  const img = t.album.images[0]?.url || "";
+  if(img !== lastCover){ lastCover = img; $("cover").src = img; tintFrom($("cover")); }
+  $("coverWrap").classList.toggle("paused", paused);
+  $("icoPlay").classList.toggle("hidden", !paused);
+  $("icoPause").classList.toggle("hidden", paused);
+  $("toggleBtn").setAttribute("aria-label", paused ? "再生" : "一時停止");
+  $("seekBar").disabled = false;
+  $("durText").textContent = fmt(dur);
+  const sh = $("shuffleBtn"); sh.classList.toggle("on", !!state.shuffle); sh.setAttribute("aria-pressed", !!state.shuffle);
+  const mode = state.repeat_mode === 2 ? "track" : state.repeat_mode === 1 ? "context" : "off";
+  const rp = $("repeatBtn"); rp.dataset.mode = mode; rp.classList.toggle("on", mode !== "off");
+  document.title = (paused ? "" : "再生中 ") + t.name + " - " + $("artist").textContent;
+  updateMediaSession(t);
+}
+// 進行バーを毎フレーム近く更新（サーバーからの通知は曲の切り替え時などのみのため）
+setInterval(() => {
+  if(dur <= 0) return;
+  const cur = paused ? pos : Math.min(dur, pos + (performance.now() - stamp));
+  if(!dragging){ $("seekBar").value = Math.round(cur / dur * 1000); setRange($("seekBar")); $("posText").textContent = fmt(cur); }
+}, 250);
+
+// ジャケット画像の平均色で背景に色味をつける（取得できなければ何もしない）
+function tintFrom(img){
+  const run = () => {
+    try {
+      const c = document.createElement("canvas"); c.width = c.height = 8;
+      const g = c.getContext("2d"); g.drawImage(img, 0, 0, 8, 8);
+      const d = g.getImageData(0,0,8,8).data; let r=0,gr=0,b=0,n=0;
+      for(let i=0;i<d.length;i+=4){ r+=d[i]; gr+=d[i+1]; b+=d[i+2]; n++; }
+      r=Math.round(r/n*0.55); gr=Math.round(gr/n*0.55); b=Math.round(b/n*0.55);
+      document.documentElement.style.setProperty("--tint", `rgb(${r},${gr},${b})`);
+    } catch(e){ /* 画像の読み込み制限などで失敗しても表示には影響しない */ }
+  };
+  if(img.complete) run(); else img.onload = run;
 }
 
-// ---- 画面の初期化 ----
+// 端末の再生操作（ロック画面など）との連携
+function updateMediaSession(t){
+  if(!("mediaSession" in navigator)) return;
+  try {
+    navigator.mediaSession.metadata = new MediaMetadata({
+      title: t.name, artist: t.artists.map(a => a.name).join(", "), album: t.album.name,
+      artwork: t.album.images.map(i => ({ src:i.url, sizes:(i.width||300)+"x"+(i.height||300) }))
+    });
+  } catch(e){}
+}
+if("mediaSession" in navigator){
+  const set = (a,f) => { try { navigator.mediaSession.setActionHandler(a,f); } catch(e){} };
+  set("play", () => player && player.resume());
+  set("pause", () => player && player.pause());
+  set("previoustrack", () => player && player.previousTrack());
+  set("nexttrack", () => player && player.nextTrack());
+}
+
+// ---- 画面の操作 ----
 $("loginBtn").onclick = login;
 $("startBtn").onclick = startPlayback;
-$("toggleBtn").onclick = () => player && player.togglePlay();
+$("playlist").addEventListener("keydown", e => { if(e.key === "Enter") startPlayback(); });
+$("toggleBtn").onclick = () => player ? player.togglePlay() : openSheet();
 $("nextBtn").onclick = () => player && player.nextTrack();
 $("prevBtn").onclick = () => player && player.previousTrack();
+
+$("shuffleBtn").onclick = () => { if(!player) return; api("shuffle?state=" + !$("shuffleBtn").classList.contains("on")); };
+$("repeatBtn").onclick = () => {
+  if(!player) return;
+  const next = { off:"context", context:"track", track:"off" }[$("repeatBtn").dataset.mode];
+  api("repeat?state=" + next);
+};
+
+// 進行バー：つまみを離した時に移動
+$("seekBar").addEventListener("input", e => {
+  dragging = true; setRange(e.target);
+  $("posText").textContent = fmt(Number(e.target.value) / 1000 * dur);
+});
+$("seekBar").addEventListener("change", e => {
+  const target = Math.round(Number(e.target.value) / 1000 * dur);
+  pos = target; stamp = performance.now();
+  player && player.seek(target);
+  dragging = false;
+});
+
+// 音量
+function applyVolume(){
+  const v = Number($("volBar").value); setRange($("volBar"));
+  store.set("volume", String(v));
+  player && player.setVolume(v / 100);
+}
+$("volBar").addEventListener("input", applyVolume);
+let lastVol = 80;
+$("muteBtn").onclick = () => {
+  const bar = $("volBar");
+  if(Number(bar.value) > 0){ lastVol = Number(bar.value); bar.value = 0; } else { bar.value = lastVol || 80; }
+  applyVolume();
+};
+
+// ---- 画面の切り替え ----
+function openSheet(){ $("sheet").classList.remove("hidden"); setTimeout(() => $("playlist").focus(), 50); }
+function closeSheets(){ $("sheet").classList.add("hidden"); $("menu").classList.add("hidden"); }
+$("listBtn").onclick = openSheet;
+$("menuBtn").onclick = () => $("menu").classList.remove("hidden");
+$("closeSheet").onclick = closeSheets;
+$("closeMenu").onclick = closeSheets;
+[$("sheet"), $("menu")].forEach(el => el.addEventListener("click", e => { if(e.target === el) closeSheets(); }));
+
+// ---- キーボード操作 ----
+document.addEventListener("keydown", e => {
+  const tag = (e.target.tagName || "").toLowerCase();
+  if(e.key === "Escape"){ closeSheets(); return; }
+  if(tag === "input" && e.target.type !== "range") return;
+  if(e.ctrlKey || e.metaKey || e.altKey) return;
+  if($("playerArea").classList.contains("hidden")) return;
+  const k = e.key.toLowerCase();
+  if(k === " " && tag !== "button"){ e.preventDefault(); $("toggleBtn").click(); }
+  else if(k === "arrowright" && tag !== "input"){ e.preventDefault(); player && player.seek(Math.min(dur, pos + (paused ? 0 : performance.now() - stamp) + 10000)); }
+  else if(k === "arrowleft" && tag !== "input"){ e.preventDefault(); player && player.seek(Math.max(0, pos + (paused ? 0 : performance.now() - stamp) - 10000)); }
+  else if(k === "n") $("nextBtn").click();
+  else if(k === "p") $("prevBtn").click();
+  else if(k === "s") $("shuffleBtn").click();
+  else if(k === "r") $("repeatBtn").click();
+  else if(k === "m") $("muteBtn").click();
+  else if(k === "l") openSheet();
+});
+
 // ---- 許可証の持ち出しと取り込み ----
 $("exportBtn").onclick = async () => {
   try { await getToken(); } catch(e){ log(e.message); return; } // 最新の許可証にしてから表示
@@ -202,6 +525,13 @@ $("copyBtn").onclick = async () => {
   try { await navigator.clipboard.writeText($("exportBox").value); log("コピーしました"); }
   catch(e){ $("exportBox").select(); log("自動コピーできません。欄を長押ししてコピーしてください"); }
 };
+function showPlayer(){
+  $("setup").classList.add("hidden");
+  $("playerArea").classList.remove("hidden");
+  $("listBtn").classList.remove("hidden");
+  $("menuBtn").classList.remove("hidden");
+  $("topLabel").textContent = "再生中のプレイリスト";
+}
 $("importBtn").onclick = async () => {
   const token = $("importBox").value.trim();
   if(!token){ log("許可証を貼り付けてください"); return; }
@@ -212,8 +542,7 @@ $("importBtn").onclick = async () => {
     await getToken(); // 実際に使えるか確かめる
     $("importBox").value = "";
     log("取り込みました");
-    $("setup").classList.add("hidden");
-    $("playerArea").classList.remove("hidden");
+    showPlayer();
   } catch(e){
     store.del("refresh");
     log("取り込みに失敗: " + e.message + "（元の端末で再度ログインし直してから試してください）");
@@ -224,8 +553,14 @@ $("logoutBtn").onclick = () => { ["access","refresh","expires","verifier"].forEa
 
 (async () => {
   $("playlist").value = store.get("lastPlaylist") || "";
+  const v = store.get("volume"); if(v !== null){ $("volBar").value = v; }
+  setRange($("volBar")); setRange($("seekBar"));
+  renderHistory();
   try { await handleRedirect(); } catch(e){ log(e.message); }
-  if(store.get("refresh")){ $("setup").classList.add("hidden"); $("playerArea").classList.remove("hidden"); }
+  if(store.get("refresh")){
+    showPlayer();
+    if(!store.get("lastPlaylist")) openSheet();
+  }
   log("戻り先URL（開発者画面に登録する値）: " + REDIRECT_URI);
 })();
 </script>
