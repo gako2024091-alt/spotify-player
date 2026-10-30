@@ -29,9 +29,13 @@
   <h1>プレイリスト再生（試作）</h1>
 
   <section id="setup">
-    <label for="clientId">SpotifyのクライアントID（初回のみ）</label>
-    <input id="clientId" placeholder="開発者画面に表示される英数字">
     <div class="row"><button id="loginBtn">Spotifyでログイン</button></div>
+    <details style="margin-top:16px">
+      <summary style="color:var(--sub);font-size:13px">別の端末の許可証を取り込む</summary>
+      <label for="importBox" style="margin-top:10px">別の端末で表示した許可証を貼り付け</label>
+      <input id="importBox" autocomplete="off" autocapitalize="off" spellcheck="false">
+      <div class="row"><button id="importBtn">取り込む</button></div>
+    </details>
   </section>
 
   <section id="playerArea" class="hidden">
@@ -46,6 +50,15 @@
       <button class="secondary" id="nextBtn">次へ</button>
       <button class="secondary" id="logoutBtn">ログアウト</button>
     </div>
+    <details style="margin-top:16px">
+      <summary style="color:var(--sub);font-size:13px">許可証を別の端末へ持ち出す</summary>
+      <p style="font-size:13px;color:var(--sub)">この文字列はアカウントを操作できる鍵です。他人に見せず、メールやメッセージで送らないでください。持ち出した後は、この端末でログアウトしてください。</p>
+      <div class="row">
+        <button class="secondary" id="exportBtn">許可証を表示</button>
+        <button class="secondary hidden" id="copyBtn">コピー</button>
+      </div>
+      <input id="exportBox" class="hidden" readonly style="margin-top:10px">
+    </details>
   </section>
 
   <section>
@@ -60,6 +73,8 @@
 
 <script>
 // ---- 設定 ----
+// ここに開発者画面の Client ID を貼り付ける（秘密情報ではないので公開しても問題ない）
+const CLIENT_ID = "ここにClient IDを貼り付け";
 const SCOPES = "streaming user-read-email user-read-private user-read-playback-state user-modify-playback-state";
 const REDIRECT_URI = location.origin + location.pathname; // 開発者画面にこれと同じ値を登録する
 const $ = id => document.getElementById(id);
@@ -83,8 +98,7 @@ async function challengeOf(verifier){
   return btoa(String.fromCharCode(...new Uint8Array(hash))).replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/,"");
 }
 async function login(){
-  const clientId = $("clientId").value.trim();
-  if(!clientId){ log("クライアントIDを入力してください"); return; }
+  const clientId = CLIENT_ID;
   store.set("clientId", clientId);
   const verifier = randomString(64);
   store.set("verifier", verifier);
@@ -177,10 +191,38 @@ $("startBtn").onclick = startPlayback;
 $("toggleBtn").onclick = () => player && player.togglePlay();
 $("nextBtn").onclick = () => player && player.nextTrack();
 $("prevBtn").onclick = () => player && player.previousTrack();
+// ---- 許可証の持ち出しと取り込み ----
+$("exportBtn").onclick = async () => {
+  try { await getToken(); } catch(e){ log(e.message); return; } // 最新の許可証にしてから表示
+  $("exportBox").value = store.get("refresh") || "";
+  $("exportBox").classList.remove("hidden");
+  $("copyBtn").classList.remove("hidden");
+};
+$("copyBtn").onclick = async () => {
+  try { await navigator.clipboard.writeText($("exportBox").value); log("コピーしました"); }
+  catch(e){ $("exportBox").select(); log("自動コピーできません。欄を長押ししてコピーしてください"); }
+};
+$("importBtn").onclick = async () => {
+  const token = $("importBox").value.trim();
+  if(!token){ log("許可証を貼り付けてください"); return; }
+  store.set("clientId", CLIENT_ID);
+  store.set("refresh", token);
+  store.del("access"); store.del("expires");
+  try {
+    await getToken(); // 実際に使えるか確かめる
+    $("importBox").value = "";
+    log("取り込みました");
+    $("setup").classList.add("hidden");
+    $("playerArea").classList.remove("hidden");
+  } catch(e){
+    store.del("refresh");
+    log("取り込みに失敗: " + e.message + "（元の端末で再度ログインし直してから試してください）");
+  }
+};
+
 $("logoutBtn").onclick = () => { ["access","refresh","expires","verifier"].forEach(store.del); location.reload(); };
 
 (async () => {
-  $("clientId").value = store.get("clientId") || "";
   $("playlist").value = store.get("lastPlaylist") || "";
   try { await handleRedirect(); } catch(e){ log(e.message); }
   if(store.get("refresh")){ $("setup").classList.add("hidden"); $("playerArea").classList.remove("hidden"); }
