@@ -7,187 +7,200 @@
 <title>プレイリスト再生</title>
 <style>
   :root {
-    --bg:#121212; --panel:rgba(255,255,255,.07); --panel-strong:rgba(255,255,255,.12);
-    --text:#f5f5f5; --sub:#b3b3b3; --accent:#1ed760; --accent-dim:#169c46;
-    --tint:#2a2a2a; /* ジャケットの色で変わる */
-    --c1:#1ed760; --c2:#3a3a8a; --c3:#8a3a5a;
+    --bg:#101010; --panel:rgba(255,255,255,.06); --panel-strong:rgba(255,255,255,.12);
+    --line:rgba(255,255,255,.08);
+    --text:#f5f5f5; --sub:#a9a9a9; --accent:#1ed760;
+    --tint:#2a2a2a; --c1:#1ed760; --c2:#3a3a8a; --c3:#8a3a5a;
+    --cover:min(54vh, 34vw);
   }
   * { box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
   html,body { height:100%; }
-  body {
-    margin:0; color:var(--text); background:var(--bg);
-    font-family:-apple-system,"Hiragino Sans","Yu Gothic UI","Noto Sans JP",sans-serif;
-  }
+  body { margin:0; color:var(--text); background:var(--bg); overflow:hidden;
+    font-family:-apple-system,"Hiragino Sans","Yu Gothic UI","Meiryo","Noto Sans JP",sans-serif; }
   button { font:inherit; color:inherit; background:none; border:none; cursor:pointer; padding:0; }
-  button:focus-visible, input:focus-visible, summary:focus-visible { outline:2px solid var(--accent); outline-offset:3px; border-radius:8px; }
+  button:disabled { opacity:.4; cursor:default; }
+  button:focus-visible, a:focus-visible, input:focus-visible, summary:focus-visible { outline:2px solid var(--accent); outline-offset:3px; border-radius:8px; }
   svg { display:block; fill:currentColor; }
   .hidden { display:none !important; }
 
-  main { max-width:520px; margin:0 auto; min-height:100%; padding:max(16px,env(safe-area-inset-top)) 20px max(24px,env(safe-area-inset-bottom)); display:flex; flex-direction:column; gap:18px; }
+  /* ---- 全体の骨組み：上の見出し / 中身 / 下の再生バー ---- */
+  .app { height:100vh; display:grid; grid-template-rows:auto 1fr; }
+  .topbar { display:flex; align-items:center; justify-content:space-between; padding:14px 28px; }
+  .topbar h1 { font-size:13px; font-weight:600; letter-spacing:.1em; color:var(--sub); margin:0; }
+  .topbar .tools { display:flex; gap:6px; align-items:center; }
 
-  /* 上部バー */
-  .topbar { display:flex; align-items:center; justify-content:space-between; gap:8px; }
-  .topbar h1 { font-size:13px; font-weight:600; letter-spacing:.08em; color:var(--sub); margin:0; }
-  .icon-btn { width:44px; height:44px; border-radius:50%; display:grid; place-items:center; color:var(--sub); transition:background .15s,color .15s; }
-  .icon-btn:hover { background:var(--panel); color:var(--text); }
-  .icon-btn svg { width:22px; height:22px; }
+  .icon-btn { width:40px; height:40px; border-radius:50%; display:grid; place-items:center; color:var(--sub); transition:background .15s,color .15s; }
+  .icon-btn:hover { background:var(--panel-strong); color:var(--text); }
+  .icon-btn svg { width:20px; height:20px; }
+  .icon-btn.on { color:var(--accent); }
+  .chip { display:inline-flex; align-items:center; gap:8px; height:36px; padding:0 14px; border-radius:999px; background:var(--panel); color:var(--text); font-size:13px; text-decoration:none; transition:background .15s; white-space:nowrap; }
+  .chip:hover { background:var(--panel-strong); }
+  .chip svg { width:16px; height:16px; }
+  .chip[aria-disabled="true"] { opacity:.4; pointer-events:none; }
 
-  /* ログイン画面 */
-  #setup { margin:auto 0; text-align:center; display:flex; flex-direction:column; gap:20px; align-items:center; }
-  #setup .logo { width:88px; height:88px; border-radius:24px; background:var(--panel-strong); display:grid; place-items:center; color:var(--accent); }
-  #setup .logo svg { width:44px; height:44px; }
-  #setup p { margin:0; color:var(--sub); font-size:14px; line-height:1.7; }
-  .primary { background:var(--accent); color:#000; font-weight:700; border-radius:999px; padding:14px 28px; font-size:16px; min-height:48px; transition:transform .1s,background .15s; }
+  .primary { background:var(--accent); color:#000; font-weight:700; border-radius:999px; padding:12px 28px; font-size:15px; min-height:44px; transition:transform .1s,background .15s; }
   .primary:hover { background:#3ee47a; }
   .primary:active { transform:scale(.97); }
-  .ghost { background:var(--panel-strong); border-radius:999px; padding:10px 18px; font-size:14px; min-height:44px; }
+  .ghost { background:var(--panel-strong); border-radius:999px; padding:9px 18px; font-size:14px; min-height:40px; }
   .ghost:hover { background:rgba(255,255,255,.2); }
-
-  details.fold { width:100%; text-align:left; background:var(--panel); border-radius:14px; padding:4px 14px; }
-  details.fold summary { color:var(--sub); font-size:13px; padding:12px 0; cursor:pointer; list-style:none; }
-  details.fold summary::-webkit-details-marker { display:none; }
+  .field { width:100%; padding:11px 14px; border-radius:10px; border:1px solid var(--line); background:rgba(0,0,0,.45); color:var(--text); font-size:14px; }
+  .field:focus { border-color:var(--accent); outline:none; }
+  .note { font-size:12px; color:var(--sub); line-height:1.7; margin:0; }
+  details.fold { background:var(--panel); border-radius:12px; padding:2px 14px; }
+  details.fold summary { color:var(--sub); font-size:13px; padding:11px 0; cursor:pointer; }
   details.fold[open] summary { color:var(--text); }
   details.fold .body { padding:0 0 14px; display:flex; flex-direction:column; gap:10px; }
-  .note { font-size:12px; color:var(--sub); line-height:1.6; margin:0; }
-  .field { width:100%; padding:12px 14px; border-radius:12px; border:1px solid transparent; background:rgba(0,0,0,.45); color:var(--text); font-size:16px; }
-  .field:focus { border-color:var(--accent); outline:none; }
 
-  /* プレイヤー */
-  #playerArea { display:flex; flex-direction:column; gap:18px; flex:1; }
-  .cover-wrap { position:relative; width:min(100%,52vh); aspect-ratio:1/1; margin:0 auto; border-radius:14px; overflow:hidden; background:var(--tint); box-shadow:0 18px 40px rgba(0,0,0,.5); display:grid; place-items:center; transition:transform .3s; }
-  .cover-wrap.paused { transform:scale(.92); }
+  /* ---- ログイン前 ---- */
+  #setup { align-self:center; justify-self:center; width:min(420px, 90vw); text-align:center; display:flex; flex-direction:column; gap:20px; align-items:center; padding-bottom:10vh; }
+  #setup .logo { width:80px; height:80px; border-radius:22px; background:var(--panel-strong); display:grid; place-items:center; color:var(--accent); }
+  #setup .logo svg { width:40px; height:40px; }
+  #setup p { margin:0; color:var(--sub); font-size:14px; line-height:1.8; }
+  #setup details { width:100%; text-align:left; }
+
+  /* ---- ログイン後 ---- */
+  #playerArea { display:grid; grid-template-rows:1fr auto; min-height:0; }
+  .content { display:grid; grid-template-columns:minmax(0,1.15fr) minmax(360px,1fr); gap:56px; padding:4px 56px 28px; min-height:0; width:100%; max-width:1440px; margin:0 auto; }
+
+  .left { display:flex; flex-direction:column; justify-content:center; align-items:center; gap:28px; min-height:0; }
+  .stage { position:relative; display:grid; place-items:center; isolation:isolate; }
+  .cover-wrap { position:relative; width:var(--cover); aspect-ratio:1/1; border-radius:12px; overflow:hidden; background:var(--tint); box-shadow:0 24px 60px rgba(0,0,0,.55); transition:transform .4s; }
+  .cover-wrap.paused { transform:scale(.95); }
   #cover { width:100%; height:100%; object-fit:cover; display:block; }
   #cover[src=""], #cover:not([src]) { visibility:hidden; }
-  .cover-wrap .ph { position:absolute; color:var(--sub); }
+  .meta { width:var(--cover); display:flex; flex-direction:column; gap:6px; }
+  #title { font-size:28px; font-weight:700; line-height:1.3; overflow:hidden; text-overflow:ellipsis; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; }
+  #artist { color:var(--sub); font-size:16px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 
-  .meta { display:flex; flex-direction:column; gap:4px; min-height:56px; }
-  #title { font-size:22px; font-weight:700; line-height:1.3; overflow:hidden; text-overflow:ellipsis; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; }
-  #artist { color:var(--sub); font-size:15px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .right { display:flex; flex-direction:column; min-height:0; padding:12px 0; }
+  .panel { flex:1; min-height:0; display:flex; flex-direction:column; background:rgba(0,0,0,.28); border:1px solid var(--line); border-radius:18px; backdrop-filter:blur(16px); -webkit-backdrop-filter:blur(16px); overflow:hidden; }
+  .tabs { display:flex; gap:4px; padding:10px; border-bottom:1px solid var(--line); }
+  .tabs button { padding:8px 18px; border-radius:999px; font-size:14px; color:var(--sub); }
+  .tabs button:hover { color:var(--text); }
+  .tabs button[aria-selected="true"] { background:var(--panel-strong); color:var(--text); font-weight:700; }
+  .pane { position:relative; flex:1; min-height:0; overflow:auto; padding:16px 24px 24px; scroll-behavior:smooth; }
+  .pane::-webkit-scrollbar { width:8px; } .pane::-webkit-scrollbar-thumb { background:rgba(255,255,255,.15); border-radius:4px; }
 
-  /* 進行バー */
-  .seek { display:flex; flex-direction:column; gap:6px; }
-  .times { display:flex; justify-content:space-between; font-size:12px; color:var(--sub); font-variant-numeric:tabular-nums; }
-  input[type=range] { -webkit-appearance:none; appearance:none; width:100%; height:28px; background:transparent; cursor:pointer; margin:0; --p:0%; }
-  input[type=range]::-webkit-slider-runnable-track { height:5px; border-radius:3px; background:linear-gradient(to right,var(--text) var(--p),rgba(255,255,255,.22) var(--p)); }
-  input[type=range]::-moz-range-track { height:5px; border-radius:3px; background:rgba(255,255,255,.22); }
-  input[type=range]::-moz-range-progress { height:5px; border-radius:3px; background:var(--text); }
-  input[type=range]::-webkit-slider-thumb { -webkit-appearance:none; width:14px; height:14px; border-radius:50%; background:#fff; margin-top:-4.5px; box-shadow:0 1px 4px rgba(0,0,0,.5); }
-  input[type=range]::-moz-range-thumb { width:14px; height:14px; border:none; border-radius:50%; background:#fff; }
-  input[type=range]:hover::-webkit-slider-runnable-track { background:linear-gradient(to right,var(--accent) var(--p),rgba(255,255,255,.22) var(--p)); }
+  #nextList { list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:4px; counter-reset:q; }
+  #nextList li { display:flex; gap:14px; align-items:center; padding:8px; border-radius:10px; }
+  #nextList li:not(.empty):hover { background:var(--panel); }
+  #nextList li:not(.empty)::before { counter-increment:q; content:counter(q); width:18px; text-align:right; color:var(--sub); font-size:13px; font-variant-numeric:tabular-nums; }
+  #nextList img { width:48px; height:48px; border-radius:6px; object-fit:cover; background:var(--tint); flex:none; }
+  #nextList .txt { min-width:0; }
+  #nextList .n { font-size:15px; font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  #nextList .a { font-size:13px; color:var(--sub); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .empty { color:var(--sub); font-size:14px; line-height:1.8; }
 
-  /* 操作ボタン */
-  .controls { display:flex; align-items:center; justify-content:space-between; padding:0 4px; }
-  .controls .icon-btn { width:52px; height:52px; color:var(--text); }
+  #lyrics .ln { font-size:24px; font-weight:700; line-height:1.55; color:rgba(255,255,255,.35); padding:4px 0; transition:color .25s; }
+  #lyrics .ln.active { color:#fff; }
+  #lyrics.plain .ln { font-size:17px; font-weight:500; color:var(--text); line-height:1.9; padding:0; }
+  #lyricsSrc { margin-top:20px; }
+
+  /* ---- 下の再生バー ---- */
+  .bar { display:grid; grid-template-columns:1fr minmax(420px,640px) 1fr; align-items:center; gap:24px; padding:12px 24px 16px; background:rgba(0,0,0,.4); border-top:1px solid var(--line); backdrop-filter:blur(24px); -webkit-backdrop-filter:blur(24px); transition:opacity .5s; }
+  .bar .l { display:flex; gap:8px; }
+  .bar .c { display:flex; flex-direction:column; gap:4px; }
+  .bar .r { display:flex; justify-content:flex-end; align-items:center; gap:4px; }
+  .controls { display:flex; justify-content:center; align-items:center; gap:20px; }
+  .controls .icon-btn { color:var(--text); }
   .controls .icon-btn.small { color:var(--sub); }
   .controls .icon-btn.small.on { color:var(--accent); }
-  .controls .icon-btn svg { width:28px; height:28px; }
-  .controls .icon-btn.small svg { width:22px; height:22px; }
-  #toggleBtn { width:72px; height:72px; border-radius:50%; background:#fff; color:#000; display:grid; place-items:center; transition:transform .1s; }
-  #toggleBtn:hover { transform:scale(1.05); }
-  #toggleBtn:active { transform:scale(.96); }
-  #toggleBtn svg { width:34px; height:34px; }
+  #toggleBtn { width:48px; height:48px; border-radius:50%; background:#fff; color:#000; display:grid; place-items:center; transition:transform .1s; }
+  #toggleBtn:hover { transform:scale(1.06); }
+  #toggleBtn:active { transform:scale(.95); }
+  #toggleBtn svg { width:24px; height:24px; }
   .badge { position:relative; }
-  .badge[data-mode="track"]::after { content:"1"; position:absolute; right:10px; top:8px; font-size:10px; font-weight:700; color:var(--accent); }
+  .badge[data-mode="track"]::after { content:"1"; position:absolute; right:6px; top:4px; font-size:9px; font-weight:700; color:var(--accent); }
+  .seek { display:flex; align-items:center; gap:10px; font-size:12px; color:var(--sub); font-variant-numeric:tabular-nums; }
+  .seek span { width:40px; flex:none; } .seek span:first-child { text-align:right; }
+  .volume { display:flex; align-items:center; gap:4px; }
+  .volume input { width:110px; }
+  .sep { width:1px; height:22px; background:var(--line); margin:0 6px; }
 
-  .volume { display:flex; align-items:center; gap:10px; color:var(--sub); }
-  .volume svg { width:20px; height:20px; flex:none; }
+  input[type=range] { -webkit-appearance:none; appearance:none; width:100%; height:20px; background:transparent; cursor:pointer; margin:0; --p:0%; }
+  input[type=range]::-webkit-slider-runnable-track { height:4px; border-radius:2px; background:linear-gradient(to right,var(--text) var(--p),rgba(255,255,255,.2) var(--p)); }
+  input[type=range]::-moz-range-track { height:4px; border-radius:2px; background:rgba(255,255,255,.2); }
+  input[type=range]::-moz-range-progress { height:4px; border-radius:2px; background:var(--text); }
+  input[type=range]::-webkit-slider-thumb { -webkit-appearance:none; width:12px; height:12px; border-radius:50%; background:#fff; margin-top:-4px; opacity:0; transition:opacity .15s; }
+  input[type=range]::-moz-range-thumb { width:12px; height:12px; border:none; border-radius:50%; background:#fff; opacity:0; }
+  input[type=range]:hover::-webkit-slider-thumb, input[type=range]:focus-visible::-webkit-slider-thumb { opacity:1; }
+  input[type=range]:hover::-moz-range-thumb { opacity:1; }
+  input[type=range]:hover::-webkit-slider-runnable-track { background:linear-gradient(to right,var(--accent) var(--p),rgba(255,255,255,.2) var(--p)); }
+  input[type=range]:hover::-moz-range-progress { background:var(--accent); }
 
-  /* プレイリスト選択（下から出る） */
-  #sheet { position:fixed; inset:0; z-index:10; display:flex; align-items:flex-end; justify-content:center; background:rgba(0,0,0,.6); }
-  #sheet .card { width:100%; max-width:520px; background:#1d1d1d; border-radius:20px 20px 0 0; padding:20px 20px max(24px,env(safe-area-inset-bottom)); display:flex; flex-direction:column; gap:14px; max-height:85vh; overflow:auto; animation:up .22s ease-out; }
-  @keyframes up { from { transform:translateY(40px); opacity:0; } to { transform:none; opacity:1; } }
-  #sheet h2 { margin:0; font-size:17px; }
-  .row { display:flex; gap:8px; }
-  .row .field { flex:1; }
-  .history { display:flex; flex-direction:column; gap:6px; }
-  .history button { text-align:left; padding:12px 14px; border-radius:12px; background:var(--panel); font-size:13px; color:var(--sub); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  /* ---- 小窓（プレイリスト選択・設定） ---- */
+  .modal { position:fixed; inset:0; z-index:10; display:grid; place-items:center; background:rgba(0,0,0,.6); }
+  .modal .card { width:min(520px, 92vw); max-height:84vh; overflow:auto; background:#1c1c1c; border:1px solid var(--line); border-radius:18px; padding:24px; display:flex; flex-direction:column; gap:14px; animation:pop .18s ease-out; box-shadow:0 30px 80px rgba(0,0,0,.6); }
+  @keyframes pop { from { transform:scale(.97); opacity:0; } }
+  .modal h2 { margin:0; font-size:17px; }
+  .modal .foot { display:flex; justify-content:flex-end; gap:8px; margin-top:4px; }
+  .history { display:flex; flex-direction:column; gap:4px; }
+  .history .label { font-size:12px; color:var(--sub); margin:6px 0 2px; }
+  .history button { text-align:left; padding:10px 12px; border-radius:10px; background:var(--panel); font-size:13px; color:var(--sub); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
   .history button:hover { background:var(--panel-strong); color:var(--text); }
-  .history .label { font-size:12px; color:var(--sub); margin-top:4px; }
+  .keys { display:grid; grid-template-columns:auto 1fr; gap:6px 14px; font-size:13px; color:var(--sub); margin:0; }
+  .keys dt { text-align:right; } .keys dd { margin:0; }
+  kbd { font-family:inherit; font-size:12px; background:var(--panel-strong); border-radius:5px; padding:1px 7px; color:var(--text); }
+  #log { white-space:pre-wrap; max-height:180px; overflow:auto; background:rgba(0,0,0,.35); padding:10px; border-radius:10px; line-height:1.6; font-size:12px; color:var(--sub); }
 
-  /* 記録 */
-  #toast { position:fixed; left:50%; bottom:max(24px,env(safe-area-inset-bottom)); transform:translate(-50%,20px); background:#2a2a2a; color:var(--text); padding:12px 18px; border-radius:12px; font-size:13px; opacity:0; pointer-events:none; transition:.25s; max-width:90vw; z-index:20; text-align:center; }
+  #toast { position:fixed; left:50%; bottom:110px; transform:translate(-50%,16px); background:#2a2a2a; color:var(--text); padding:10px 18px; border-radius:10px; font-size:13px; opacity:0; pointer-events:none; transition:.25s; max-width:60vw; z-index:20; text-align:center; box-shadow:0 10px 30px rgba(0,0,0,.4); }
   #toast.show { opacity:1; transform:translate(-50%,0); }
-  details.logbox { color:var(--sub); font-size:12px; }
-  details.logbox summary { cursor:pointer; padding:8px 0; list-style:none; }
-  details.logbox summary::-webkit-details-marker { display:none; }
-  #log { white-space:pre-wrap; max-height:160px; overflow:auto; background:rgba(0,0,0,.35); padding:10px; border-radius:10px; line-height:1.6; }
 
-  .actions { display:flex; gap:8px; flex-wrap:wrap; }
-  .actions .ghost { flex:1; text-align:center; text-decoration:none; color:var(--text); display:grid; place-items:center; white-space:nowrap; }
-  .actions .ghost[aria-disabled="true"] { opacity:.4; pointer-events:none; }
-  .tabs { display:flex; gap:6px; background:var(--panel); padding:4px; border-radius:999px; }
-  .tabs button { flex:1; padding:10px; border-radius:999px; font-size:14px; color:var(--sub); min-height:44px; }
-  .tabs button[aria-selected="true"] { background:var(--panel-strong); color:var(--text); font-weight:700; }
-  .pane { background:var(--panel); border-radius:16px; padding:14px; max-height:340px; overflow:auto; scroll-behavior:smooth; }
-  #nextList { list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:10px; }
-  #nextList li { display:flex; gap:12px; align-items:center; }
-  #nextList img { width:48px; height:48px; border-radius:6px; object-fit:cover; background:var(--tint); flex:none; }
-  #nextList .n { font-size:14px; font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-  #nextList .a { font-size:12px; color:var(--sub); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-  #nextList .txt { min-width:0; }
-  .empty { color:var(--sub); font-size:13px; line-height:1.7; }
-  #lyrics .ln { font-size:20px; font-weight:700; line-height:1.6; color:rgba(255,255,255,.4); padding:2px 0; transition:color .2s; }
-  #lyrics .ln.active { color:#fff; }
-  #lyrics.plain .ln { font-size:16px; font-weight:500; color:var(--text); line-height:1.9; }
-  #lyricsSrc { margin-top:12px; }
-  .kbd { font-size:11px; color:var(--sub); text-align:center; line-height:1.8; }
-  @media (max-width:480px){ .kbd { display:none; } }
   /* ---- 背景：ジャケットのぼかしと、色のゆらぎ ---- */
   #bg { position:fixed; inset:0; z-index:-1; overflow:hidden; background:var(--bg); }
-  #bg .art { position:absolute; inset:-15%; background-size:cover; background-position:center; filter:blur(60px) saturate(1.4) brightness(.5); opacity:0; transition:opacity 1.4s; }
+  #bg .art { position:absolute; inset:-15%; background-size:cover; background-position:center; filter:blur(70px) saturate(1.4) brightness(.45); opacity:0; transition:opacity 1.4s; }
   #bg .art.show { opacity:1; }
-  #bg .blob { position:absolute; width:60vmax; height:60vmax; border-radius:50%; filter:blur(80px); opacity:.35; mix-blend-mode:screen; animation:drift 28s ease-in-out infinite alternate; transition:background 1.5s; }
+  #bg .blob { position:absolute; width:60vmax; height:60vmax; border-radius:50%; filter:blur(90px); opacity:.3; mix-blend-mode:screen; animation:drift 28s ease-in-out infinite alternate; transition:background 1.5s; }
   #bg .b1 { background:var(--c1); top:-20vmax; left:-15vmax; }
   #bg .b2 { background:var(--c2); bottom:-25vmax; right:-20vmax; animation-duration:34s; animation-delay:-8s; }
   #bg .b3 { background:var(--c3); top:30%; left:30%; width:40vmax; height:40vmax; animation-duration:40s; animation-delay:-15s; }
-  #bg::after { content:""; position:absolute; inset:0; background:linear-gradient(180deg,rgba(0,0,0,.1),rgba(0,0,0,.6)); }
-  body.is-paused #bg .blob { animation-play-state:paused; opacity:.2; }
+  #bg::after { content:""; position:absolute; inset:0; background:linear-gradient(180deg,rgba(0,0,0,.15),rgba(0,0,0,.55)); }
+  body.is-paused #bg .blob { animation-play-state:paused; opacity:.18; }
   @keyframes drift { 0%{transform:translate(0,0) scale(1);} 50%{transform:translate(8vmax,6vmax) scale(1.15);} 100%{transform:translate(-6vmax,10vmax) scale(.95);} }
-  .pane { backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px); }
 
-  /* ---- ジャケットの後ろの光（再生中はゆっくり呼吸する） ---- */
-  .stage { position:relative; display:grid; place-items:center; isolation:isolate; }
-  .glow { position:absolute; width:min(100%,52vh); aspect-ratio:1/1; border-radius:50%; background:radial-gradient(circle,var(--c1),transparent 68%); filter:blur(40px); opacity:0; transition:opacity .8s, background 1.5s; z-index:-1; }
-  body:not(.is-paused) .glow { opacity:.65; animation:breathe 5s ease-in-out infinite; }
-  @keyframes breathe { 50% { transform:scale(1.1); opacity:.4; } }
+  .glow { position:absolute; width:var(--cover); aspect-ratio:1/1; border-radius:50%; background:radial-gradient(circle,var(--c1),transparent 68%); filter:blur(50px); opacity:0; transition:opacity .8s, background 1.5s; z-index:-1; }
+  body:not(.is-paused) .glow { opacity:.6; animation:breathe 5s ease-in-out infinite; }
+  @keyframes breathe { 50% { transform:scale(1.1); opacity:.38; } }
 
   /* ---- レコード表示 ---- */
-  body.vinyl .cover-wrap { border-radius:50%; animation:spin 14s linear infinite; animation-play-state:paused; box-shadow:0 0 0 10px #0d0d0d, 0 18px 40px rgba(0,0,0,.6); }
+  body.vinyl .cover-wrap { border-radius:50%; animation:spin 14s linear infinite; animation-play-state:paused; box-shadow:0 0 0 10px #0d0d0d, 0 24px 60px rgba(0,0,0,.6); }
   body.vinyl:not(.is-paused) .cover-wrap { animation-play-state:running; }
   body.vinyl .cover-wrap::after { content:""; position:absolute; inset:0; border-radius:50%; pointer-events:none;
     background:radial-gradient(circle, #0d0d0d 0 3.2%, rgba(255,255,255,.35) 3.3% 3.8%, transparent 4% 100%),
                repeating-radial-gradient(circle, rgba(0,0,0,.22) 0 1px, transparent 1px 5px); }
   @keyframes spin { to { transform:rotate(360deg); } }
 
-  /* ---- 曲が替わる時の演出 ---- */
   .swap { animation:swapIn .6s ease; }
   @keyframes swapIn { from { opacity:0; transform:translateY(10px); filter:blur(6px); } }
 
   /* ---- 没入表示 ---- */
-  .imm-bar { position:fixed; top:max(12px,env(safe-area-inset-top)); right:12px; z-index:5; display:none; gap:6px; transition:opacity .4s; }
-  .imm-bar .ghost { backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px); }
+  .imm-bar { position:fixed; top:20px; right:24px; z-index:5; display:none; gap:8px; transition:opacity .5s; }
   body.immersive .imm-bar { display:flex; }
-  body.immersive .topbar, body.immersive .actions, body.immersive .tabs, body.immersive .volume,
-  body.immersive .kbd, body.immersive .logbox, body.immersive #paneNext { display:none !important; }
-  body.immersive main { justify-content:center; max-width:720px; }
-  body.immersive .cover-wrap, body.immersive .glow { width:min(100%,62vh); }
+  body.immersive .topbar { display:none; }
+  body.immersive .app { grid-template-rows:1fr; }
+  body.immersive { --cover:min(64vh, 56vw); }
+  body.immersive .content { grid-template-columns:1fr; padding-top:48px; }
+  body.immersive .right { display:none; }
   body.immersive .meta { text-align:center; align-items:center; }
-  body.immersive #title { font-size:28px; }
-  body.immersive.lyrics-view .stage { display:none; }
-  body.immersive.lyrics-view #paneLyrics { max-height:62vh; background:transparent; backdrop-filter:none; -webkit-backdrop-filter:none;
-    -webkit-mask-image:linear-gradient(transparent,#000 15%,#000 85%,transparent); mask-image:linear-gradient(transparent,#000 15%,#000 85%,transparent); padding:20vh 8px; }
-  body.immersive.lyrics-view #lyrics .ln { font-size:clamp(22px,4.5vw,34px); }
-  body.immersive .seek, body.immersive .controls, body.immersive .meta { transition:opacity .5s; }
-  body.immersive.idle .seek, body.immersive.idle .controls, body.immersive.idle .imm-bar { opacity:0; pointer-events:none; }
+  body.immersive #title { font-size:34px; }
+  body.immersive.lyrics-view .left { display:none; }
+  body.immersive.lyrics-view .right { display:flex; width:min(960px,100%); justify-self:center; }
+  body.immersive.lyrics-view .panel { background:transparent; border:none; backdrop-filter:none; -webkit-backdrop-filter:none; }
+  body.immersive.lyrics-view .tabs { display:none; }
+  body.immersive.lyrics-view .pane { padding:30vh 8px; -webkit-mask-image:linear-gradient(transparent,#000 20%,#000 80%,transparent); mask-image:linear-gradient(transparent,#000 20%,#000 80%,transparent); }
+  body.immersive.lyrics-view #lyrics .ln { font-size:clamp(30px,3.2vw,48px); }
+  body.immersive.idle .bar, body.immersive.idle .imm-bar { opacity:0; pointer-events:none; }
   body.immersive.idle { cursor:none; }
-  .icon-btn.on { color:var(--accent); }
-  body.vinyl .cover-wrap, body.vinyl .glow { width:min(calc(100% - 24px),50vh); }
-  body.immersive.vinyl .cover-wrap, body.immersive.vinyl .glow { width:min(calc(100% - 24px),58vh); }
-  body.immersive main { padding-top:max(72px,env(safe-area-inset-top)); }
-  body.immersive .stage { order:1; } body.immersive .meta { order:2; } body.immersive #paneLyrics { order:3; flex:1; }
-  body.immersive .seek { order:4; } body.immersive .controls { order:5; }
-  body.immersive.lyrics-view #paneLyrics { padding:12vh 8px; }
 
+  /* 狭いウィンドウでは縦に並べる */
+  @media (max-width: 900px) {
+    body { overflow:auto; }
+    :root { --cover:min(80vw, 46vh); }
+    .content { grid-template-columns:1fr; gap:24px; padding:4px 20px 20px; overflow:auto; }
+    .right { min-height:420px; }
+    .bar { grid-template-columns:1fr; gap:10px; }
+    .bar .l, .bar .r { justify-content:center; }
+  }
   @media (prefers-reduced-motion: reduce){ *{ transition:none !important; animation:none !important; } }
 </style>
 </head>
@@ -195,31 +208,26 @@
 <div id="bg" aria-hidden="true"><div class="art"></div><div class="art"></div><div class="blob b1"></div><div class="blob b2"></div><div class="blob b3"></div></div>
 <div class="imm-bar">
   <button class="ghost" id="immSwitch">歌詞を表示</button>
-  <button class="ghost" id="immExit">閉じる</button>
+  <button class="ghost" id="immExit">閉じる（Esc）</button>
 </div>
-<main>
-  <div class="topbar">
+
+<div class="app">
+  <header class="topbar">
     <h1 id="topLabel">プレイリスト再生</h1>
-    <div style="display:flex;gap:4px">
-      <button class="icon-btn hidden" id="vinylBtn" aria-label="レコード表示の切り替え" aria-pressed="false" title="レコード表示 (V)">
-        <svg viewBox="0 0 24 24"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm0 18a8 8 0 1 1 0-16 8 8 0 0 1 0 16zm0-11a3 3 0 1 0 0 6 3 3 0 0 0 0-6zm0 4a1 1 0 1 1 0-2 1 1 0 0 1 0 2zM12 6a6 6 0 0 0-6 6h1.5A4.5 4.5 0 0 1 12 7.5V6z"/></svg>
-      </button>
-      <button class="icon-btn hidden" id="immBtn" aria-label="没入表示" title="没入表示 (F)">
-        <svg viewBox="0 0 24 24"><path d="M4 4h6v2H6v4H4V4zm10 0h6v6h-2V6h-4V4zM4 14h2v4h4v2H4v-6zm14 0h2v6h-6v-2h4v-4z"/></svg>
-      </button>
-      <button class="icon-btn hidden" id="listBtn" aria-label="プレイリストを選ぶ" title="プレイリストを選ぶ (L)">
-        <svg viewBox="0 0 24 24"><path d="M3 6h13v2H3V6zm0 5h13v2H3v-2zm0 5h9v2H3v-2zm15-6v6.2A3 3 0 1 0 20 19V11h3V9h-5v1z"/></svg>
+    <div class="tools">
+      <button class="chip hidden" id="listBtn" title="プレイリストを選ぶ (L)">
+        <svg viewBox="0 0 24 24"><path d="M3 6h13v2H3V6zm0 5h13v2H3v-2zm0 5h9v2H3v-2zm15-6v6.2A3 3 0 1 0 20 19V11h3V9h-5v1z"/></svg>プレイリスト
       </button>
       <button class="icon-btn hidden" id="menuBtn" aria-label="設定" title="設定">
-        <svg viewBox="0 0 24 24"><path d="M12 8a2 2 0 1 0 0-4 2 2 0 0 0 0 4zm0 6a2 2 0 1 0 0-4 2 2 0 0 0 0 4zm0 6a2 2 0 1 0 0-4 2 2 0 0 0 0 4z"/></svg>
+        <svg viewBox="0 0 24 24"><path d="M19.4 13a7.5 7.5 0 0 0 0-2l2.1-1.6-2-3.5-2.5 1a7.6 7.6 0 0 0-1.7-1L15 3h-4l-.4 2.7a7.6 7.6 0 0 0-1.7 1l-2.5-1-2 3.5L6.6 11a7.5 7.5 0 0 0 0 2l-2.1 1.6 2 3.5 2.5-1c.5.4 1.1.7 1.7 1L11 21h4l.4-2.7c.6-.3 1.2-.6 1.7-1l2.5 1 2-3.5L19.4 13zM13 15.5a3.5 3.5 0 1 1 0-7 3.5 3.5 0 0 1 0 7z" transform="translate(-1 0)"/></svg>
       </button>
     </div>
-  </div>
+  </header>
 
   <!-- ログイン前 -->
   <section id="setup">
     <div class="logo"><svg viewBox="0 0 24 24"><path d="M9 3v12.3A3.5 3.5 0 1 0 11 18.5V7.8l8-1.6v6.1A3.5 3.5 0 1 0 21 15.5V3L9 3z"/></svg></div>
-    <p>Spotifyのアカウントでログインすると、<br>お気に入りのプレイリストをこのページで再生できます。<br>（再生にはSpotify Premiumが必要です）</p>
+    <p>Spotifyのアカウントでログインすると、<br>プレイリストをこのページで再生できます。<br>（再生にはSpotify Premiumが必要です）</p>
     <button class="primary" id="loginBtn">Spotifyでログイン</button>
     <details class="fold">
       <summary>別の端末の許可証を取り込む</summary>
@@ -233,108 +241,145 @@
 
   <!-- ログイン後 -->
   <section id="playerArea" class="hidden">
-    <div class="stage">
-      <div class="glow"></div>
-      <div class="cover-wrap paused" id="coverWrap">
-        <img id="cover" alt="アルバムのジャケット画像" crossorigin="anonymous">
+    <div class="content">
+      <div class="left">
+        <div class="stage">
+          <div class="glow"></div>
+          <div class="cover-wrap paused" id="coverWrap">
+            <img id="cover" alt="アルバムのジャケット画像" crossorigin="anonymous">
+          </div>
+        </div>
+        <div class="meta">
+          <div id="title">プレイリストを選んでください</div>
+          <div id="artist">右上の「プレイリスト」から選べます</div>
+        </div>
+      </div>
+
+      <div class="right">
+        <div class="panel">
+          <div class="tabs" role="tablist">
+            <button role="tab" id="tabNext" aria-selected="true">次に再生</button>
+            <button role="tab" id="tabLyrics" aria-selected="false">歌詞</button>
+          </div>
+          <div class="pane" id="paneNext"><ol id="nextList"><li class="empty">再生を始めると、次の曲が表示されます。</li></ol></div>
+          <div class="pane hidden" id="paneLyrics">
+            <div id="lyrics"><div class="empty">再生を始めると、歌詞を探します。</div></div>
+            <div class="note" id="lyricsSrc"></div>
+          </div>
+        </div>
       </div>
     </div>
 
-    <div class="meta">
-      <div id="title">プレイリストを選んでください</div>
-      <div id="artist">右上の一覧ボタンから選べます</div>
-    </div>
+    <footer class="bar">
+      <div class="l">
+        <button class="chip" id="copyLinkBtn" title="今の曲のSpotifyリンクをコピー">
+          <svg viewBox="0 0 24 24"><path d="M10.6 13.4a1 1 0 0 1 0-1.4l3.5-3.5a3 3 0 1 1 4.2 4.2l-2 2-1.4-1.4 2-2a1 1 0 1 0-1.4-1.4L12 13.4a1 1 0 0 1-1.4 0zm2.8-2.8a1 1 0 0 1 0 1.4l-3.5 3.5a3 3 0 1 1-4.2-4.2l2-2 1.4 1.4-2 2a1 1 0 1 0 1.4 1.4L12 10.6a1 1 0 0 1 1.4 0z"/></svg>リンクをコピー
+        </button>
+        <a class="chip" id="openLink" href="#" target="_blank" rel="noopener" aria-disabled="true" title="Spotifyで開く">
+          <svg viewBox="0 0 24 24"><path d="M14 3h7v7h-2V6.4l-9.3 9.3-1.4-1.4L17.6 5H14V3zM5 5h6v2H5v12h12v-6h2v8H3V5h2z"/></svg>Spotifyで開く
+        </a>
+      </div>
 
-    <div class="seek">
-      <input type="range" id="seekBar" min="0" max="1000" value="0" aria-label="再生位置" disabled>
-      <div class="times"><span id="posText">0:00</span><span id="durText">0:00</span></div>
-    </div>
+      <div class="c">
+        <div class="controls">
+          <button class="icon-btn small" id="shuffleBtn" aria-label="シャッフル" aria-pressed="false" title="シャッフル (S)">
+            <svg viewBox="0 0 24 24"><path d="M17 3l4 4-4 4V8h-2.6l-3.1 4.4L8.5 16H3v-2h4.5l2.9-4-2.9-4H3V4h5.5l3.1 4.4L14.4 6H17V3zm0 10l4 4-4 4v-3h-2.6l-2.2-3.1 1.2-1.7L14.4 15H17v-2z"/></svg>
+          </button>
+          <button class="icon-btn" id="prevBtn" aria-label="前の曲" title="前へ (P)">
+            <svg viewBox="0 0 24 24"><path d="M6 5h2v14H6V5zm3.5 7L19 5v14l-9.5-7z"/></svg>
+          </button>
+          <button id="toggleBtn" aria-label="再生" title="再生/一時停止 (スペース)">
+            <svg id="icoPlay" viewBox="0 0 24 24"><path d="M8 5v14l11-7L8 5z"/></svg>
+            <svg id="icoPause" class="hidden" viewBox="0 0 24 24"><path d="M6 5h4v14H6V5zm8 0h4v14h-4V5z"/></svg>
+          </button>
+          <button class="icon-btn" id="nextBtn" aria-label="次の曲" title="次へ (N)">
+            <svg viewBox="0 0 24 24"><path d="M16 5h2v14h-2V5zM5 19V5l9.5 7L5 19z"/></svg>
+          </button>
+          <button class="icon-btn small badge" id="repeatBtn" aria-label="繰り返し" data-mode="off" title="繰り返し (R)">
+            <svg viewBox="0 0 24 24"><path d="M7 7h10v3l4-4-4-4v3H5v6h2V7zm10 10H7v-3l-4 4 4 4v-3h12v-6h-2v4z"/></svg>
+          </button>
+        </div>
+        <div class="seek">
+          <span id="posText">0:00</span>
+          <input type="range" id="seekBar" min="0" max="1000" value="0" aria-label="再生位置" disabled>
+          <span id="durText">0:00</span>
+        </div>
+      </div>
 
-    <div class="controls">
-      <button class="icon-btn small" id="shuffleBtn" aria-label="シャッフル" aria-pressed="false" title="シャッフル (S)">
-        <svg viewBox="0 0 24 24"><path d="M17 3l4 4-4 4V8h-2.6l-3.1 4.4L8.5 16H3v-2h4.5l2.9-4-2.9-4H3V4h5.5l3.1 4.4L14.4 6H17V3zm0 10l4 4-4 4v-3h-2.6l-2.2-3.1 1.2-1.7L14.4 15H17v-2z"/></svg>
-      </button>
-      <button class="icon-btn" id="prevBtn" aria-label="前の曲" title="前へ (P)">
-        <svg viewBox="0 0 24 24"><path d="M6 5h2v14H6V5zm3.5 7L19 5v14l-9.5-7z"/></svg>
-      </button>
-      <button id="toggleBtn" aria-label="再生" title="再生/一時停止 (スペース)">
-        <svg id="icoPlay" viewBox="0 0 24 24"><path d="M8 5v14l11-7L8 5z"/></svg>
-        <svg id="icoPause" class="hidden" viewBox="0 0 24 24"><path d="M6 5h4v14H6V5zm8 0h4v14h-4V5z"/></svg>
-      </button>
-      <button class="icon-btn" id="nextBtn" aria-label="次の曲" title="次へ (N)">
-        <svg viewBox="0 0 24 24"><path d="M16 5h2v14h-2V5zM5 19V5l9.5 7L5 19z"/></svg>
-      </button>
-      <button class="icon-btn small badge" id="repeatBtn" aria-label="繰り返し" data-mode="off" title="繰り返し (R)">
-        <svg viewBox="0 0 24 24"><path d="M7 7h10v3l4-4-4-4v3H5v6h2V7zm10 10H7v-3l-4 4 4 4v-3h12v-6h-2v4z"/></svg>
-      </button>
-    </div>
-
-    <div class="volume">
-      <button class="icon-btn" id="muteBtn" aria-label="消音の切り替え" style="width:36px;height:36px" title="消音 (M)">
-        <svg viewBox="0 0 24 24" id="icoVol"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3A4.5 4.5 0 0 0 14 8v8a4.5 4.5 0 0 0 2.5-4zM14 3.2v2.1a7 7 0 0 1 0 13.4v2.1a9 9 0 0 0 0-17.6z"/></svg>
-      </button>
-      <input type="range" id="volBar" min="0" max="100" value="80" aria-label="音量">
-    </div>
-
-    <div class="actions">
-      <button class="ghost" id="copyLinkBtn">曲のリンクをコピー</button>
-      <a class="ghost" id="openLink" href="#" target="_blank" rel="noopener" aria-disabled="true">Spotifyで開く</a>
-    </div>
-
-    <div class="tabs" role="tablist">
-      <button role="tab" id="tabNext" aria-selected="true">次に再生</button>
-      <button role="tab" id="tabLyrics" aria-selected="false">歌詞</button>
-    </div>
-    <div class="pane" id="paneNext"><ol id="nextList"><li class="empty">再生を始めると、次の曲が表示されます。</li></ol></div>
-    <div class="pane hidden" id="paneLyrics">
-      <div id="lyrics"><div class="empty">再生を始めると、歌詞を探します。</div></div>
-      <div class="note" id="lyricsSrc"></div>
-    </div>
-
-    <div class="kbd">スペース：再生/停止　←　→：10秒移動　N：次　P：前　S：シャッフル　R：繰り返し　L：プレイリスト　V：レコード表示　F：没入表示</div>
-
-    <details class="logbox">
-      <summary>動作の記録を見る</summary>
-      <div id="log"></div>
-    </details>
+      <div class="r">
+        <button class="icon-btn hidden" id="vinylBtn" aria-label="レコード表示の切り替え" aria-pressed="false" title="レコード表示 (V)">
+          <svg viewBox="0 0 24 24"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm0 18a8 8 0 1 1 0-16 8 8 0 0 1 0 16zm0-11a3 3 0 1 0 0 6 3 3 0 0 0 0-6zm0 4a1 1 0 1 1 0-2 1 1 0 0 1 0 2zM12 6a6 6 0 0 0-6 6h1.5A4.5 4.5 0 0 1 12 7.5V6z"/></svg>
+        </button>
+        <button class="icon-btn hidden" id="immBtn" aria-label="没入表示" title="没入表示 (F)">
+          <svg viewBox="0 0 24 24"><path d="M4 4h6v2H6v4H4V4zm10 0h6v6h-2V6h-4V4zM4 14h2v4h4v2H4v-6zm14 0h2v6h-6v-2h4v-4z"/></svg>
+        </button>
+        <span class="sep"></span>
+        <div class="volume">
+          <button class="icon-btn" id="muteBtn" aria-label="消音の切り替え" title="消音 (M)">
+            <svg viewBox="0 0 24 24" id="icoVol"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3A4.5 4.5 0 0 0 14 8v8a4.5 4.5 0 0 0 2.5-4zM14 3.2v2.1a7 7 0 0 1 0 13.4v2.1a9 9 0 0 0 0-17.6z"/></svg>
+          </button>
+          <input type="range" id="volBar" min="0" max="100" value="80" aria-label="音量">
+        </div>
+      </div>
+    </footer>
   </section>
-</main>
+</div>
 
 <!-- プレイリスト選択 -->
-<div id="sheet" class="hidden" role="dialog" aria-modal="true" aria-label="プレイリストを選ぶ">
+<div id="sheet" class="modal hidden" role="dialog" aria-modal="true" aria-label="プレイリストを選ぶ">
   <div class="card">
     <h2>プレイリストを選ぶ</h2>
-    <div class="row">
-      <input id="playlist" class="field" placeholder="https://open.spotify.com/playlist/..." autocomplete="off" autocapitalize="off" spellcheck="false" aria-label="プレイリストのURLまたはURI">
-    </div>
-    <button class="primary" id="startBtn">このページで再生</button>
+    <input id="playlist" class="field" placeholder="https://open.spotify.com/playlist/..." autocomplete="off" autocapitalize="off" spellcheck="false" aria-label="プレイリストのURLまたはURI">
     <div class="history" id="history"></div>
-    <button class="ghost" id="closeSheet">閉じる</button>
+    <div class="foot">
+      <button class="ghost" id="closeSheet">閉じる</button>
+      <button class="primary" id="startBtn">このページで再生</button>
+    </div>
   </div>
 </div>
 
-<!-- 設定（許可証・ログアウト） -->
-<div id="menu" class="hidden" style="position:fixed;inset:0;z-index:10;display:flex;align-items:flex-end;justify-content:center;background:rgba(0,0,0,.6)" role="dialog" aria-modal="true" aria-label="設定">
-  <div class="card" style="width:100%;max-width:520px;background:#1d1d1d;border-radius:20px 20px 0 0;padding:20px 20px max(24px,env(safe-area-inset-bottom));display:flex;flex-direction:column;gap:14px;max-height:85vh;overflow:auto">
-    <h2 style="margin:0;font-size:17px">設定</h2>
+<!-- 設定 -->
+<div id="menu" class="modal hidden" role="dialog" aria-modal="true" aria-label="設定">
+  <div class="card">
+    <h2>設定</h2>
+    <details class="fold">
+      <summary>キーボード操作の一覧</summary>
+      <div class="body">
+        <dl class="keys">
+          <dt><kbd>スペース</kbd></dt><dd>再生 / 一時停止</dd>
+          <dt><kbd>←</kbd> <kbd>→</kbd></dt><dd>10秒戻す / 進める</dd>
+          <dt><kbd>N</kbd> <kbd>P</kbd></dt><dd>次の曲 / 前の曲</dd>
+          <dt><kbd>S</kbd> <kbd>R</kbd></dt><dd>シャッフル / 繰り返し</dd>
+          <dt><kbd>M</kbd></dt><dd>消音</dd>
+          <dt><kbd>L</kbd></dt><dd>プレイリストを選ぶ</dd>
+          <dt><kbd>V</kbd> <kbd>F</kbd></dt><dd>レコード表示 / 没入表示</dd>
+          <dt><kbd>Esc</kbd></dt><dd>小窓や没入表示を閉じる</dd>
+        </dl>
+      </div>
+    </details>
     <details class="fold">
       <summary>許可証を別の端末へ持ち出す</summary>
       <div class="body">
         <p class="note">この文字列はアカウントを操作できる鍵です。他人に見せず、メールやメッセージで送らないでください。持ち出した後は、この端末でログアウトしてください。</p>
-        <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <div style="display:flex;gap:8px">
           <button class="ghost" id="exportBtn">許可証を表示</button>
           <button class="ghost hidden" id="copyBtn">コピー</button>
         </div>
         <input id="exportBox" class="field hidden" readonly>
       </div>
     </details>
-    <button class="ghost" id="logoutBtn">ログアウト</button>
-    <button class="ghost" id="closeMenu">閉じる</button>
+    <details class="fold">
+      <summary>動作の記録</summary>
+      <div class="body"><div id="log"></div></div>
+    </details>
+    <div class="foot">
+      <button class="ghost" id="logoutBtn">ログアウト</button>
+      <button class="primary" id="closeMenu">閉じる</button>
+    </div>
   </div>
 </div>
 
 <div id="toast" role="status" aria-live="polite"></div>
-
 <script>
 // ---- 設定 ----
 // ここに開発者画面の Client ID を貼り付ける（秘密情報ではないので公開しても問題ない）
@@ -344,10 +389,10 @@ const REDIRECT_URI = location.origin + location.pathname; // 開発者画面に�
 const $ = id => document.getElementById(id);
 
 const logLines = [];
-const log = msg => {
+const log = (msg, quiet) => {
   logLines.unshift(new Date().toLocaleTimeString() + " " + msg);
   $("log").textContent = logLines.slice(0,60).join("\n");
-  toast(msg);
+  if(!quiet) toast(msg);
 };
 let toastTimer;
 function toast(msg){
@@ -594,7 +639,7 @@ function syncLyrics(cur){
     el.classList.add("active");
     if(!$("paneLyrics").classList.contains("hidden")){
       const p = $("paneLyrics");
-      p.scrollTo({ top: el.offsetTop - p.clientHeight/2 + el.clientHeight/2 - p.offsetTop, behavior:"smooth" });
+      p.scrollTo({ top: el.offsetTop - p.clientHeight/2 + el.clientHeight/2, behavior:"smooth" });
     }
   }
 }
@@ -797,7 +842,7 @@ function showPlayer(){
   $("vinylBtn").classList.remove("hidden");
   $("immBtn").classList.remove("hidden");
   setVinyl(store.get("vinyl") === "1");
-  $("topLabel").textContent = "再生中のプレイリスト";
+  
 }
 $("importBtn").onclick = async () => {
   const token = $("importBox").value.trim();
@@ -828,7 +873,7 @@ $("logoutBtn").onclick = () => { ["access","refresh","expires","verifier"].forEa
     showPlayer();
     if(!store.get("lastPlaylist")) openSheet();
   }
-  log("戻り先URL（開発者画面に登録する値）: " + REDIRECT_URI);
+  log("戻り先URL（開発者画面に登録する値）: " + REDIRECT_URI, true);
 })();
 </script>
 <script src="https://sdk.scdn.co/spotify-player.js"></script>
