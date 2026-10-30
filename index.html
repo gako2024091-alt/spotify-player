@@ -254,6 +254,101 @@
   body.vinyl .content { padding-right:72px; }
   body.immersive .lyr-tools, body.immersive .lyr-cands { display:none !important; }
 
+  /* ==== レコード表示：ターンテーブル（寸法はすべて本体の幅に対する割合 cqw で指定） ==== */
+  .deck { display:none; width:min(calc(var(--cover) * 1.42), 100%, calc((100vh - 330px) / .86)); }
+  body.vinyl .stage { display:none; }
+  body.vinyl .deck { display:block; }
+  body.vinyl .meta { width:min(calc(var(--cover) * 1.42), 100%, calc((100vh - 330px) / .86)); }
+  body.vinyl .content { padding-right:56px; }
+  body.immersive .deck, body.immersive.vinyl .meta { width:min(100%, calc((100vh - 250px) / .86)); }
+  .plinth { position:relative; width:100%; aspect-ratio:1 / .86; border-radius:2.4cqw; container-type:inline-size;
+    background:linear-gradient(160deg,#2e2e31 0%,#1a1a1c 45%,#111113 100%);
+    box-shadow:0 50px 90px rgba(0,0,0,.6), 0 0 0 1px rgba(255,255,255,.05), inset 0 1px 0 rgba(255,255,255,.1), inset 0 -3px 0 rgba(0,0,0,.6); }
+  .plinth::before { content:""; position:absolute; inset:0; border-radius:inherit; pointer-events:none;
+    background:repeating-linear-gradient(90deg,rgba(255,255,255,.018) 0 1px,transparent 1px 3px); }
+  /* 本体の縁にジャケットの色を薄く映す */
+  .plinth::after { content:""; position:absolute; inset:0; border-radius:inherit; pointer-events:none;
+    background:radial-gradient(120% 80% at 20% 0%, color-mix(in srgb, var(--hl) 14%, transparent), transparent 60%); }
+
+  .platter-wrap { position:absolute; left:5cqw; top:5cqw; width:66cqw; aspect-ratio:1; border-radius:50%;
+    box-shadow:0 1.6cqw 3cqw rgba(0,0,0,.7), 0 0 0 .5cqw #0a0a0b; }
+  .spin { position:absolute; inset:0; border-radius:50%; will-change:transform; }
+  /* 回転台の縁（回転の速さを確かめるための点々模様） */
+  .mat { position:absolute; inset:0; border-radius:50%;
+    background:radial-gradient(circle, #1a1a1a 0 94.5%, transparent 95%),
+               repeating-conic-gradient(#d4d4d4 0 1.6deg, #5e5e5e 1.6deg 3.2deg); }
+  /* 黒いレコード盤：細かな溝と、曲間の少し光る帯 */
+  .record { position:absolute; inset:3.4%; border-radius:50%; overflow:hidden;
+    background:
+      radial-gradient(circle, transparent 0 51%, rgba(255,255,255,.07) 51.3% 51.8%, transparent 52.1%),
+      radial-gradient(circle, transparent 0 63%, rgba(255,255,255,.07) 63.3% 63.8%, transparent 64.1%),
+      radial-gradient(circle, transparent 0 76%, rgba(255,255,255,.07) 76.3% 76.8%, transparent 77.1%),
+      radial-gradient(circle, transparent 0 96%, #050505 96.5%),
+      repeating-radial-gradient(circle, #0d0d0d 0 .28%, #1b1b1b .38% .62%);
+    box-shadow:inset 0 0 0 1px #000; }
+  /* 中央のラベル：ジャケット画像 */
+  .label { position:absolute; inset:33%; border-radius:50%; overflow:hidden; background:var(--tint); box-shadow:0 0 0 .3cqw #0a0a0a, inset 0 0 1cqw rgba(0,0,0,.5); }
+  .label img { width:100%; height:100%; object-fit:cover; display:block; }
+  .label img:not([src]), .label img[src=""] { visibility:hidden; }
+  /* 盤面の光の反射（回転しないので、溝が回っているように見える） */
+  .sheen { position:absolute; inset:3.4%; border-radius:50%; pointer-events:none; mix-blend-mode:screen;
+    background:
+      conic-gradient(from 25deg, transparent 0 6%, rgba(255,255,255,.16) 11%, transparent 17% 50%, rgba(255,255,255,.11) 61%, transparent 67%),
+      conic-gradient(from 100deg, transparent 0 20%, color-mix(in srgb, var(--hl) 22%, transparent) 25%, transparent 31% 70%, color-mix(in srgb, var(--hl) 16%, transparent) 76%, transparent 82%);
+    -webkit-mask:radial-gradient(circle, transparent 0 34%, #000 34.6%); mask:radial-gradient(circle, transparent 0 34%, #000 34.6%); }
+  .spindle { position:absolute; left:50%; top:50%; width:2.2cqw; aspect-ratio:1; border-radius:50%; transform:translate(-50%,-50%);
+    background:radial-gradient(circle at 35% 35%, #fff, #9a9a9a 45%, #3a3a3a); box-shadow:0 .3cqw .6cqw rgba(0,0,0,.6); }
+  .platter-wrap .ripple { width:auto; inset:3%; border-radius:50%; }
+
+  /* トーンアーム */
+  .arm-base { position:absolute; left:86cqw; top:13cqw; width:13cqw; aspect-ratio:1; border-radius:50%; transform:translate(-50%,-50%);
+    background:radial-gradient(circle, #3c3c40 0 42%, #232326 44% 70%, #18181a 72%);
+    box-shadow:0 .8cqw 1.8cqw rgba(0,0,0,.6), inset 0 1px 0 rgba(255,255,255,.12); }
+  .arm-rest { position:absolute; left:86cqw; top:47cqw; width:3.2cqw; height:3.2cqw; border-radius:.6cqw; transform:translate(-50%,-50%);
+    background:linear-gradient(#3a3a3d,#1c1c1f); box-shadow:0 .5cqw 1cqw rgba(0,0,0,.6), inset 0 1px 0 rgba(255,255,255,.1); }
+  .arm2 { position:absolute; left:86cqw; top:13cqw; width:0; height:56cqw; transform-origin:0 0; transform:rotate(0deg); z-index:3;
+    transition:transform 1.1s cubic-bezier(.45,.05,.2,1), filter .5s; filter:drop-shadow(.6cqw 1.2cqw .7cqw rgba(0,0,0,.55)); }
+  .arm2.lifted { filter:drop-shadow(1.6cqw 3cqw 1.4cqw rgba(0,0,0,.4)); }
+  .arm2 .rod { position:absolute; left:-.65cqw; top:-9cqw; width:1.3cqw; height:calc(100% + 4cqw); border-radius:1cqw;
+    background:linear-gradient(90deg,#8e8e8e,#f7f7f7 45%,#9c9c9c); }
+  .arm2 .weight { position:absolute; left:-2.8cqw; top:-15cqw; width:5.6cqw; height:6.4cqw; border-radius:1cqw;
+    background:linear-gradient(90deg,#1f1f21,#5c5c60 42%,#222225); box-shadow:inset 0 0 0 1px rgba(255,255,255,.06); }
+  .arm2 .weight::after { content:""; position:absolute; left:0; right:0; top:45%; height:.5cqw; background:var(--hl); opacity:.8; }
+  .arm2 .pivot { position:absolute; left:-2.6cqw; top:-2.6cqw; width:5.2cqw; aspect-ratio:1; border-radius:50%;
+    background:radial-gradient(circle at 40% 40%, #fafafa 0 22%, #8c8c8c 26% 58%, #2e2e30 62%); }
+  .arm2 .shell { position:absolute; left:-2.2cqw; top:calc(100% - 6cqw); width:4.4cqw; height:7cqw; border-radius:.7cqw; transform:rotate(22deg); transform-origin:50% 0;
+    background:linear-gradient(#3e3e41,#141416); border-top:.6cqw solid var(--hl); }
+  .arm2 .shell span { position:absolute; right:-1.6cqw; top:1.2cqw; width:2cqw; height:.6cqw; border-radius:.3cqw; background:#bdbdbd; }
+
+  /* 前面パネル */
+  .front { position:absolute; left:0; right:0; top:74.5cqw; height:8cqw; }
+  .deck-start { position:absolute; left:5cqw; top:.4cqw; height:6.6cqw; padding:0 3cqw; border-radius:1.2cqw;
+    font-size:2.1cqw; font-weight:700; letter-spacing:.18em; color:#e6e6e6;
+    background:linear-gradient(#3b3b3f,#232326); box-shadow:0 .6cqw 0 #0b0b0c, 0 1.2cqw 1.6cqw rgba(0,0,0,.5), inset 0 1px 0 rgba(255,255,255,.14);
+    transition:transform .08s, box-shadow .08s; }
+  .deck-start:hover { color:#fff; }
+  .deck-start:active { transform:translateY(.45cqw); box-shadow:0 .15cqw 0 #0b0b0c, 0 .5cqw .8cqw rgba(0,0,0,.5), inset 0 1px 0 rgba(255,255,255,.14); }
+  .rpm { position:absolute; left:29.5cqw; top:1.6cqw; display:flex; align-items:center; gap:1cqw; font-size:2.2cqw; font-weight:700; color:#8a8a8a; letter-spacing:.05em; }
+  .rpm small { font-size:1.6cqw; margin-right:1.6cqw; }
+  .led { display:inline-block; width:1.2cqw; height:1.2cqw; border-radius:50%; background:#3a2a2a; box-shadow:inset 0 0 .3cqw rgba(0,0,0,.8); }
+  body:not(.is-paused) .led.on, body:not(.is-paused) .led.pw { background:var(--hl); box-shadow:0 0 1.2cqw var(--hl), 0 0 .3cqw var(--hl); }
+  .led.pw { background:#2a3a2a; }
+  .lcd { position:absolute; left:45cqw; top:.2cqw; width:50cqw; height:7cqw; border-radius:1cqw; padding:0 2cqw; display:flex; align-items:center; gap:1.8cqw;
+    background:linear-gradient(#08100a,#0d1a10); box-shadow:inset 0 0 0 1px #000, inset 0 .5cqw 1.2cqw rgba(0,0,0,.85), 0 1px 0 rgba(255,255,255,.06);
+    color:var(--hl); font-family:ui-monospace,"SF Mono",Menlo,Consolas,"MS Gothic",monospace; font-size:2.3cqw; letter-spacing:.06em;
+    text-shadow:0 0 1cqw color-mix(in srgb, var(--hl) 75%, transparent); overflow:hidden; }
+  .lcd .scroll { flex:1; overflow:hidden; white-space:nowrap; -webkit-mask-image:linear-gradient(90deg,transparent,#000 8%,#000 92%,transparent); mask-image:linear-gradient(90deg,transparent,#000 8%,#000 92%,transparent); }
+  .lcd .scroll span { display:inline-block; padding-left:100%; animation:marquee 16s linear infinite; }
+  body.is-paused .lcd .scroll span { animation-play-state:paused; }
+  @keyframes marquee { to { transform:translateX(-100%); } }
+  .lcd .time { font-variant-numeric:tabular-nums; }
+  .lyr-row { display:flex; gap:6px; }
+  .lyr-row button { flex:1; justify-content:center; }
+  .lyr-search { display:flex; gap:6px; margin:2px 0; }
+  .lyr-search .field { padding:8px 10px; font-size:13px; }
+  .lyr-search .chip { flex:none; }
+  .lyr-cands .hint { font-size:12px; color:var(--sub); margin:4px 2px; line-height:1.6; }
+
   /* 狭いウィンドウでは縦に並べる */
   @media (max-width: 900px) {
     body { overflow:auto; }
@@ -314,6 +409,35 @@
           </div>
           <div class="arm" id="arm" aria-hidden="true"><div class="rod"></div><div class="head"></div></div>
         </div>
+        <!-- レコード表示：ターンテーブル -->
+        <div class="deck" id="deck">
+          <div class="plinth">
+            <div class="platter-wrap" id="platterWrap">
+              <div class="spin" id="spin">
+                <div class="mat"></div>
+                <div class="record">
+                  <div class="label"><img id="labelImg" alt=""></div>
+                </div>
+              </div>
+              <div class="sheen"></div>
+              <div class="spindle"></div>
+            </div>
+            <div class="arm-base"></div>
+            <div class="arm-rest"></div>
+            <div class="arm2" id="arm2" aria-hidden="true">
+              <div class="weight"></div><div class="rod"></div><div class="pivot"></div><div class="shell"><span></span></div>
+            </div>
+            <div class="front">
+              <button class="deck-start" id="deckStart" title="再生 / 一時停止 (スペース)">START・STOP</button>
+              <div class="rpm"><span class="led on"></span>33<small>⅓</small><span class="led"></span>45</div>
+              <div class="lcd" aria-hidden="true">
+                <span class="led pw"></span>
+                <div class="scroll"><span id="lcdTitle">NO DISC</span></div>
+                <span class="time" id="lcdTime">0:00</span>
+              </div>
+            </div>
+          </div>
+        </div>
         <div class="meta">
           <div id="title">プレイリストを選んでください</div>
           <div id="artist">右上の「プレイリスト」から選べます</div>
@@ -329,7 +453,7 @@
           <div class="pane" id="paneNext"><ol id="nextList"><li class="empty">再生を始めると、次の曲が表示されます。</li></ol></div>
           <div class="pane hidden" id="paneLyrics">
             <div class="lyr-tools hidden" id="lyrTools">
-              <button class="chip sm" id="lyrPick" title="歌詞が違う曲のものだった場合に、別の候補から選べます">別の候補を選ぶ</button>
+              <button class="chip sm" id="lyrPick" title="歌詞が見つからない・違う曲の歌詞の時に、候補から選んだり自分で検索したりできます">歌詞を探す・選ぶ</button>
               <span class="sp"></span>
               <div class="grp" id="lyrOffWrap">
                 <span>タイミング</span>
@@ -631,7 +755,7 @@ function showState(state){
   sdkNext = state.track_window.next_tracks || [];
   const qkey = t.uri + "|" + state.shuffle + "|" + state.repeat_mode + "|" + sdkNext.map(x => x.uri).join(",");
   if(qkey !== lastQueueKey){ lastQueueKey = qkey; if(!queueShown) renderNext(sdkNext, "pending"); clearTimeout(queueTimer); queueTimer = setTimeout(loadQueue, 700); }
-  if(t.uri !== lastUri){ lastUri = t.uri; setLink(t); loadLyrics(t); replay($("title").parentElement); }
+  if(t.uri !== lastUri){ if(lastUri) armHoldUntil = performance.now() + 1300; $("lcdTitle").textContent = t.name + "  —  " + artistsOf(t); lastUri = t.uri; setLink(t); loadLyrics(t); replay($("title").parentElement); }
   document.title = (paused ? "" : "再生中 ") + t.name + " - " + $("artist").textContent;
   updateMediaSession(t);
 }
@@ -722,19 +846,24 @@ function parseLrc(s){
   return out;
 }
 function showLyricsMsg(msg){ lyricLines = []; $("lyrics").className = ""; $("lyrics").textContent = ""; const d = document.createElement("div"); d.className = "empty"; d.textContent = msg; $("lyrics").appendChild(d); }
-// 歌詞探しの精度を上げるための工夫
+// 歌詞探しの工夫
 //  1. 曲名から「(Remastered 2011)」「- Live」「(feat. ○○)」などの付け足しを外して検索する
 //  2. 日本語名と英語名の両方をSpotifyから取得し、どちらの表記でも検索する（例：米津玄師 / Kenshi Yonezu）
-//  3. 集めた候補を「曲名の近さ・歌手名の近さ・曲の長さの差」で点数化し、点数が足りなければ表示しない
-//  4. それでも違う時は、利用者が候補から選べる。選んだ結果とタイミング調整は曲ごとに記憶する
+//  3. 「曲名＋歌手名」だけでなく「曲名だけ」「自由語句」でも検索し、候補を広く集める
+//  4. 集めた候補を「曲名の近さ・歌手名の近さ・曲の長さの差」で点数化して選ぶ
+//  5. 歌詞サービスは混み合うと応答が遅いため、待ち時間を長めにし、失敗したら1回だけ再試行する
+//  6. 見つかった歌詞は曲ごとに記憶し、次回は直接取り出す。次の曲の歌詞は先に探しておく
+//  7. それでも見つからない時は、曲名や歌手名を自分で入力して探せる
 const lyricCache = new Map();
-let lyricCands = [], lyricOffset = 0, curTrackId = "", skipPulse = true, currentLyric = null;
+let lyricCands = [], lyricOffset = 0, curTrackId = "", skipPulse = true, currentLyric = null, lyricPartial = false, lastStats = null;
+const LRC = "https://lrclib.net/api/";
+const sleep = ms => new Promise(r => setTimeout(r, ms));
 const norm = s => (s || "").normalize("NFKC").toLowerCase().replace(/[\s\p{P}\p{S}]/gu, "");
 function cleanTitle(s){
   let x = (s || "").normalize("NFKC");
   const extra = /\b(feat|ft|with|remaster(ed)?|live|ver|version|edit|mix|mono|stereo|bonus|demo|from|tv|size|radio|acoustic|single)\b|主題歌|映画|ドラマ|アニメ|cm/i;
-  x = x.replace(/\s*[\(\[【〈「]([^\)\]】〉」]*)[\)\]】〉」]/g, (m, inner) => extra.test(inner) ? "" : m);
-  x = x.replace(/\s+[-–—]\s+.*$/, m => extra.test(m) ? "" : m);
+  x = x.replace(/\s*[\(\[【〈「『]([^\)\]】〉」』]*)[\)\]】〉」』]/g, (m, inner) => extra.test(inner) ? "" : m);
+  x = x.replace(/\s+[-–—~〜]\s+.*$/, m => extra.test(m) ? "" : m);
   return x.trim() || s;
 }
 // 文字の並びの似ている度合い（0〜1）。2文字ずつの組の重なりで測る
@@ -758,7 +887,8 @@ function scoreCand(c, info){
   const as = Math.max(...info.artists.map(a => Math.max(sim(c.artistName, a), (norm(a).length > 1 && norm(c.artistName).includes(norm(a))) ? .9 : 0)));
   let s = ns * .4 + as * .3 + ds * .3 + (c.syncedLyrics ? .08 : 0);
   if(ns < .45) s -= .3;
-  if(as < .3 && !(ns >= .9 && dd <= 2)) s -= .25;
+  // 歌手名が合わなくても、曲名がほぼ一致し長さの差が3秒以内なら同じ曲とみなす（日本語名と英語名の違いへの対策）
+  if(as < .3 && !(ns >= .85 && dd <= 3)) s -= .25;
   return s;
 }
 // 点数がほぼ同じなら、時間同期つきの歌詞を優先する
@@ -768,10 +898,10 @@ function bestOf(list){
   if(top.c.syncedLyrics) return top;
   return list.find(x => x.c.syncedLyrics && x.s >= top.s - .06) || top;
 }
-async function getJson(url, opt = {}, ms = 8000){
+async function getJson(url, opt = {}, ms = 8000, stats = null){
   const ac = new AbortController(), tm = setTimeout(() => ac.abort(), ms);
-  try { const r = await fetch(url, { ...opt, signal:ac.signal }); return r.ok ? await r.json() : null; }
-  catch(e){ return null; } finally { clearTimeout(tm); }
+  try { const r = await fetch(url, { ...opt, signal:ac.signal }); if(stats) stats.ok++; return r.ok ? await r.json() : null; }
+  catch(e){ if(stats) stats.fail++; return null; } finally { clearTimeout(tm); }
 }
 async function altNames(id){
   const out = { titles:[], artists:[] };
@@ -783,62 +913,92 @@ async function altNames(id){
   }));
   return out;
 }
-async function loadLyrics(t){
+function trackInfo(t, alt = { titles:[], artists:[] }){
+  return { dur: Math.round((t.duration_ms || dur) / 1000),
+    titles:[t.name, cleanTitle(t.name), ...alt.titles, ...alt.titles.map(cleanTitle)],
+    artists:[...(t.artists || []).map(a => a.name), ...alt.artists] };
+}
+// 1曲分の歌詞を探す（画面には触らない。次の曲の先読みにも使う）
+async function findLyrics(t, skipSaved){
+  const id = (t.uri || "").split(":")[2] || "";
+  const stats = { ok:0, fail:0 };
+  const lj = async url => {
+    const before = stats.fail;
+    const d = await getJson(url, {}, 15000, stats);
+    if(d === null && stats.fail > before){ await sleep(800); return getJson(url, {}, 15000, stats); }
+    return d;
+  };
+  // 以前に見つけた（または手で選んだ）歌詞があれば、それを直接取り出す
+  const saved = store.get("lyr:" + id), remembered = store.get("lyrauto:" + id);
+  if(!skipSaved && (saved || remembered)){
+    const d = await lj(LRC + "get/" + (saved || remembered));
+    if(d && (d.syncedLyrics || d.plainLyrics)) return { cands:[{ c:d, s:1 }], pick:d, how: saved ? "manual" : "auto", stats, partial:true };
+  }
+  const artist = t.artists?.[0]?.name || "";
+  const durSec = Math.round((t.duration_ms || dur) / 1000);
+  const clean = cleanTitle(t.name);
+  const [alt, exact, s1, s2, s3] = await Promise.all([
+    altNames(id),
+    lj(LRC + "get?" + new URLSearchParams({ track_name:t.name, artist_name:artist, album_name:t.album?.name || "", duration:String(durSec) })),
+    lj(LRC + "search?" + new URLSearchParams({ track_name:clean, artist_name:artist })),
+    lj(LRC + "search?" + new URLSearchParams({ q:clean + " " + artist })),
+    lj(LRC + "search?" + new URLSearchParams({ track_name:clean }))
+  ]);
+  // 別の言語の表記があれば、その表記でも探す
+  const altT = alt.titles.find(x => norm(x) !== norm(t.name));
+  const altA = alt.artists.find(x => !(t.artists || []).some(a => norm(a.name) === norm(x)));
+  const more = [];
+  if(altT || altA) more.push(lj(LRC + "search?" + new URLSearchParams({ track_name:cleanTitle(altT || t.name), artist_name:altA || artist })));
+  if(altT) more.push(lj(LRC + "search?" + new URLSearchParams({ track_name:cleanTitle(altT) })));
+  const extra = (await Promise.all(more)).flatMap(x => x || []);
+  const info = trackInfo(t, alt);
+  const map = new Map();
+  [exact, ...(s1 || []), ...(s2 || []), ...(s3 || []), ...extra].forEach(c => { if(c && c.id && !map.has(c.id)) map.set(c.id, c); });
+  const cands = [...map.values()].map(c => ({ c, s:scoreCand(c, info) })).filter(x => x.s !== null).sort((a, b) => b.s - a.s);
+  const b = bestOf(cands);
+  const pick = b && b.s >= .55 ? b.c : null;
+  if(pick) store.set("lyrauto:" + id, String(pick.id));
+  return { cands, pick, how:"auto", stats, partial:false };
+}
+function cacheResult(uri, r){
+  // 歌詞サービスに一度もつながらなかった結果は覚えない（次回もう一度探す）
+  if(!r.pick && r.stats.ok === 0) lyricCache.delete(uri); else lyricCache.set(uri, r);
+  return r;
+}
+function prefetchLyrics(t){
+  if(!t || !t.uri || lyricCache.has(t.uri)) return;
+  lyricCache.set(t.uri, findLyrics(t).then(r => cacheResult(t.uri, r)));
+}
+async function loadLyrics(t, force){
   const my = ++lyricToken; lyricActive = -1; skipPulse = true; currentLyric = null;
   $("lyricsSrc").textContent = "";
   curTrackId = (t.uri || "").split(":")[2] || "";
   lyricOffset = Number(store.get("lyroff:" + curTrackId) || 0); showOffset();
-  $("lyrTools").classList.add("hidden"); $("lyrCands").classList.add("hidden"); lyricCands = [];
+  $("lyrCands").classList.add("hidden"); lyricCands = [];
+  if(force){ lyricCache.delete(t.uri); store.del("lyrauto:" + curTrackId); }
   showLyricsMsg("歌詞を探しています…");
   try {
-    if(lyricCache.has(t.uri)){ const c = lyricCache.get(t.uri); lyricCands = c.cands; applyLyrics(c.pick, c.how); return; }
-    const L = "https://lrclib.net/api/";
-    const artist = t.artists[0]?.name || "";
-    const durSec = Math.round((t.duration_ms || dur) / 1000);
-    const clean = cleanTitle(t.name);
-    const saved = store.get("lyr:" + curTrackId);
-    const [alt, exact, s1, s2, savedC] = await Promise.all([
-      altNames(curTrackId),
-      getJson(L + "get?" + new URLSearchParams({ track_name:t.name, artist_name:artist, album_name:t.album.name, duration:String(durSec) })),
-      getJson(L + "search?" + new URLSearchParams({ track_name:clean, artist_name:artist })),
-      getJson(L + "search?" + new URLSearchParams({ q:clean + " " + artist })),
-      saved ? getJson(L + "get/" + saved) : null
-    ]);
+    let r = lyricCache.get(t.uri);
+    if(r && typeof r.then === "function") r = await r;
+    if(!r){ const pr = findLyrics(t).then(x => cacheResult(t.uri, x)); lyricCache.set(t.uri, pr); r = await pr; }
     if(my !== lyricToken) return; // 曲が変わっていたら捨てる
-    // 別の言語の表記があれば、その表記でも探す
-    const altT = alt.titles.find(x => norm(x) !== norm(t.name));
-    const altA = alt.artists.find(x => !t.artists.some(a => norm(a.name) === norm(x)));
-    let extra = [];
-    if(altT || altA){
-      extra = await getJson(L + "search?" + new URLSearchParams({ track_name:cleanTitle(altT || t.name), artist_name:altA || artist })) || [];
-      if(my !== lyricToken) return;
-    }
-    const info = { dur:durSec,
-      titles:[t.name, clean, ...alt.titles, ...alt.titles.map(cleanTitle)],
-      artists:[...t.artists.map(a => a.name), ...alt.artists] };
-    const map = new Map();
-    [exact, ...(s1 || []), ...(s2 || []), ...extra].forEach(c => { if(c && c.id && !map.has(c.id)) map.set(c.id, c); });
-    lyricCands = [...map.values()].map(c => ({ c, s:scoreCand(c, info) })).filter(x => x.s !== null).sort((a, b) => b.s - a.s);
-    let pick = null, how = "auto";
-    if(savedC && (savedC.syncedLyrics || savedC.plainLyrics)){
-      pick = savedC; how = "manual";
-      if(!map.has(savedC.id)) lyricCands.unshift({ c:savedC, s:0 });
-    } else {
-      const b = bestOf(lyricCands);
-      if(b && b.s >= .55) pick = b.c;
-    }
-    lyricCache.set(t.uri, { cands:lyricCands, pick, how });
-    applyLyrics(pick, how);
+    lyricCands = r.cands; lyricPartial = !!r.partial; lastStats = r.stats;
+    log("歌詞の検索：候補" + r.cands.length + "件（通信 成功" + r.stats.ok + "回・失敗" + r.stats.fail + "回）", true);
+    applyLyrics(r.pick, r.how);
   } catch(e){
     if(my === lyricToken) showLyricsMsg("歌詞を取得できませんでした（通信の問題の可能性があります）。");
   }
+  setTimeout(() => prefetchLyrics(sdkNext[0]), 1500); // 次の曲を先に探しておく
 }
 function applyLyrics(d, how){
   currentLyric = d;
-  $("lyrTools").classList.toggle("hidden", !lyricCands.length);
+  $("lyrTools").classList.remove("hidden");
   lyricActive = -1; skipPulse = true;
   if(!d){
-    showLyricsMsg(lyricCands.length ? "確実に一致する歌詞は見つかりませんでした。上の「別の候補を選ぶ」から選べます。" : "この曲の歌詞は見つかりませんでした。");
+    showLyricsMsg(lastStats && lastStats.ok === 0
+      ? "歌詞サービスに接続できませんでした（混み合っているか、通信の問題の可能性があります）。上の「歌詞を探す・選ぶ」から「もう一度探す」を押してください。"
+      : lyricCands.length ? "確実に一致する歌詞は見つかりませんでした。上の「歌詞を探す・選ぶ」から候補を選べます。"
+      : "歌詞サービスにこの曲の登録が見つかりませんでした。上の「歌詞を探す・選ぶ」で、ローマ字や英語の曲名でも探せます。");
     $("lyricsSrc").textContent = ""; $("lyrOffWrap").classList.add("hidden"); return;
   }
   const box = $("lyrics"); box.textContent = "";
@@ -849,20 +1009,61 @@ function applyLyrics(d, how){
   $("lyricsSrc").textContent = "歌詞の取得元：LRCLIB（lrclib.net）「" + d.trackName + " / " + d.artistName + "」" + (how === "manual" ? "（手動で選択）" : "") +
     "。歌詞の著作権は各権利者に帰属します。" + (lyricSynced ? "" : "この歌詞は時間に合わせた表示ができません。");
 }
-$("lyrPick").onclick = () => {
+// 候補の一覧（自動選択に戻す / もう一度探す / 自分で入力して探す / 候補から選ぶ）
+async function openCands(){
   const box = $("lyrCands");
-  if(!box.classList.contains("hidden")){ box.classList.add("hidden"); return; }
-  box.textContent = "";
-  const auto = document.createElement("button");
-  const an = document.createElement("span"); an.className = "n"; an.textContent = "自動で選ぶ（おすすめ）";
-  auto.appendChild(an);
-  auto.onclick = () => {
-    store.del("lyr:" + curTrackId); box.classList.add("hidden");
-    const b = bestOf(lyricCands); const pick = b && b.s >= .55 ? b.c : null;
-    lyricCache.set(lastUri, { cands:lyricCands, pick, how:"auto" }); applyLyrics(pick, "auto");
+  box.classList.remove("hidden");
+  if(lyricPartial && curTrack){
+    box.textContent = ""; const h = document.createElement("div"); h.className = "hint"; h.textContent = "ほかの候補を探しています…"; box.appendChild(h);
+    const r = await findLyrics(curTrack, true);
+    const have = new Set(lyricCands.map(x => x.c.id));
+    lyricCands = [...lyricCands, ...r.cands.filter(x => !have.has(x.c.id))];
+    lyricPartial = false;
+    const e = lyricCache.get(lastUri); if(e && !e.then){ e.cands = lyricCands; e.partial = false; }
+  }
+  renderCands();
+}
+function renderCands(note){
+  const box = $("lyrCands"); box.textContent = "";
+  const mk = (label, fn, cls) => { const b = document.createElement("button"); if(cls) b.className = cls; const n = document.createElement("span"); n.className = "n"; n.textContent = label; b.appendChild(n); b.onclick = fn; return b; };
+  const row = document.createElement("div"); row.className = "lyr-row";
+  row.append(
+    mk("自動で選ぶ（おすすめ）", () => {
+      store.del("lyr:" + curTrackId); box.classList.add("hidden");
+      const b = bestOf(lyricCands.filter(x => x.s >= 0).sort((p, q) => q.s - p.s)); const pick = b && b.s >= .55 ? b.c : null;
+      lyricCache.set(lastUri, { cands:lyricCands, pick, how:"auto", stats:lastStats || { ok:1, fail:0 } }); applyLyrics(pick, "auto");
+    }),
+    mk("もう一度探す", () => { box.classList.add("hidden"); curTrack && loadLyrics(curTrack, true); })
+  );
+  box.appendChild(row);
+  // 自分で入力して探す（ローマ字や英語の曲名で登録されている場合に有効）
+  const form = document.createElement("form"); form.className = "lyr-search";
+  const ti = document.createElement("input"); ti.className = "field"; ti.placeholder = "曲名"; ti.value = curTrack ? cleanTitle(curTrack.name) : "";
+  const ar = document.createElement("input"); ar.className = "field"; ar.placeholder = "歌手名（空でも可）"; ar.value = curTrack?.artists?.[0]?.name || "";
+  const go = document.createElement("button"); go.className = "chip sm"; go.type = "submit"; go.textContent = "検索";
+  form.append(ti, ar, go);
+  form.onsubmit = async e => {
+    e.preventDefault();
+    if(!ti.value.trim()) return;
+    go.disabled = true; go.textContent = "検索中…";
+    const q = { track_name:ti.value.trim() }; if(ar.value.trim()) q.artist_name = ar.value.trim();
+    const st = { ok:0, fail:0 };
+    const res = await getJson(LRC + "search?" + new URLSearchParams(q), {}, 15000, st) || [];
+    go.disabled = false; go.textContent = "検索";
+    const info = curTrack ? trackInfo(curTrack) : { dur:0 };
+    const found = res.filter(c => c.syncedLyrics || c.plainLyrics)
+      .map(c => ({ c, s:-1, dd: info.dur && c.duration ? Math.abs(c.duration - info.dur) : 99 }))
+      .sort((a, b) => (a.dd - b.dd) || ((b.c.syncedLyrics ? 1 : 0) - (a.c.syncedLyrics ? 1 : 0)));
+    const have = new Set(found.map(x => x.c.id));
+    lyricCands = [...found, ...lyricCands.filter(x => !have.has(x.c.id))];
+    renderCands(st.ok === 0 ? "歌詞サービスに接続できませんでした。少し待ってからもう一度お試しください。"
+      : found.length ? "検索結果" + found.length + "件を、曲の長さが近い順に先頭へ並べました。" : "検索結果はありませんでした。ローマ字や英語の表記でもお試しください。");
   };
-  box.appendChild(auto);
-  lyricCands.slice(0, 8).forEach(({ c }) => {
+  box.appendChild(form);
+  const h = document.createElement("div"); h.className = "hint";
+  h.textContent = note || (lyricCands.length ? "候補から選ぶと、この曲では次回もその歌詞を使います。" : "候補がありません。上の欄で曲名を変えて探せます（例：ローマ字表記）。");
+  box.appendChild(h);
+  lyricCands.slice(0, 15).forEach(({ c }) => {
     const b = document.createElement("button");
     if(currentLyric && currentLyric.id === c.id) b.className = "sel";
     const n = document.createElement("span"); n.className = "n"; n.textContent = c.trackName + " / " + c.artistName;
@@ -870,12 +1071,13 @@ $("lyrPick").onclick = () => {
     b.append(n, m);
     b.onclick = () => {
       store.set("lyr:" + curTrackId, String(c.id)); box.classList.add("hidden");
-      lyricCache.set(lastUri, { cands:lyricCands, pick:c, how:"manual" }); applyLyrics(c, "manual");
+      lyricCache.set(lastUri, { cands:lyricCands, pick:c, how:"manual", stats:lastStats || { ok:1, fail:0 } }); applyLyrics(c, "manual");
     };
     box.appendChild(b);
   });
-  box.classList.remove("hidden");
-};
+  ti.focus();
+}
+$("lyrPick").onclick = () => { if(!$("lyrCands").classList.contains("hidden")){ $("lyrCands").classList.add("hidden"); return; } openCands(); };
 // タイミング調整（曲ごとに記憶）
 function showOffset(){
   const v = lyricOffset / 1000;
@@ -918,7 +1120,7 @@ function syncLyrics(cur){
 // 歌詞の行が進んだ瞬間に、ジャケットから波紋を出し、背景の光を一瞬強める
 let pulseTimer;
 function pulse(){
-  const st = document.querySelector(".stage");
+  const st = document.body.classList.contains("vinyl") ? $("platterWrap") : document.querySelector(".stage");
   if(st && st.offsetParent){
     const r = document.createElement("div"); r.className = "ripple";
     st.appendChild(r); r.addEventListener("animationend", () => r.remove());
@@ -952,8 +1154,27 @@ function tick(){
   }
   // トーンアーム：一時停止中は盤の外へ、再生中は曲の進み具合に応じて外周(15度)から内周(27度)へ
   $("arm").style.transform = "rotate(" + (paused ? -4 : 15 + 12 * cur / dur).toFixed(2) + "deg)";
+  if(document.body.classList.contains("vinyl")) deckFrame(cur);
 }
 requestAnimationFrame(tick);
+
+// ---- ターンテーブルの動き ----
+// 盤は33⅓回転（毎秒200度）。再生で約1秒かけて回り始め、停止でゆっくり止まる
+// アームは停止中は休め台に戻り、再生中は曲の進み具合に応じて外周(32度)から内周(48度)へ。曲が替わると一度上がって戻る
+let recAngle = 0, recSpeed = 0, lastFrame = performance.now(), armHoldUntil = 0, lastLcd = "";
+const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
+function deckFrame(cur){
+  const now = performance.now(), dt = Math.min(.1, (now - lastFrame) / 1000); lastFrame = now;
+  const playing = !paused && dur > 0;
+  const target = playing && now > armHoldUntil ? 200 : 0;
+  recSpeed += (target - recSpeed) * Math.min(1, dt * (target > recSpeed ? 2.2 : 1.1));
+  if(!reduceMotion){ recAngle = (recAngle + recSpeed * dt) % 360; $("spin").style.transform = "rotate(" + recAngle.toFixed(2) + "deg)"; }
+  const hold = !playing || now < armHoldUntil;
+  $("arm2").style.transform = "rotate(" + (hold ? 0 : 32 + 16 * cur / dur).toFixed(2) + "deg)";
+  $("arm2").classList.toggle("lifted", hold);
+  const tx = fmt(cur); if(tx !== lastLcd){ lastLcd = tx; $("lcdTime").textContent = (paused ? "Ⅱ " : "▶ ") + tx; }
+}
+$("deckStart").onclick = () => $("toggleBtn").click();
 
 // ジャケットがマウスの位置に合わせて少し傾く
 (() => {
@@ -974,6 +1195,7 @@ function setArt(url){
   const img = $("cover");
   replay(img);
   img.src = url;
+  $("labelImg").src = url;
   // 背景の大きなぼかし画像を2枚重ねて、徐々に入れ替える
   const arts = document.querySelectorAll("#bg .art");
   const back = arts[1 - artIdx];
