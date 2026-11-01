@@ -2,226 +2,340 @@
 <html lang="ja">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#101010">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#0d0b0a">
 <title>プレイリスト再生</title>
 <style>
+  /* ===== 色と寸法：温かみのある暗い部屋 ===== */
   :root {
-    --bg:#101010; --panel:rgba(255,255,255,.06); --panel-strong:rgba(255,255,255,.12);
-    --line:rgba(255,255,255,.08);
-    --text:#f5f5f5; --sub:#a9a9a9; --accent:#1ed760;
-    --tint:#2a2a2a; --c1:#1ed760; --c2:#3a3a8a; --c3:#8a3a5a;
-    --cover:min(54vh, 34vw);
+    --bg:#0d0b0a; --panel:rgba(255,255,255,.05); --panel-2:rgba(255,255,255,.09); --panel-3:rgba(255,255,255,.15);
+    --line:rgba(255,255,255,.08); --text:#f3f1ee; --sub:#a8a29a; --dim:#6f6a64;
+    --accent:#1ed760; --hl:#e8a54b; --tint:#2a2622; --c1:#e8a54b; --c2:#5a3a8a;
   }
+  body {
+    --lyrSize:22px;
+    --deckW:min(calc((100vh - 60px - 176px - 40px) / .86), calc(100vw - 620px - 120px), 820px);
+  }
+  body.lyr-s { --lyrSize:18px; } body.lyr-l { --lyrSize:28px; }
   * { box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
   html,body { height:100%; }
   body { margin:0; color:var(--text); background:var(--bg); overflow:hidden;
-    font-family:-apple-system,"Hiragino Sans","Yu Gothic UI","Meiryo","Noto Sans JP",sans-serif; }
+    font-family:-apple-system,"Hiragino Sans","Yu Gothic UI","Meiryo","Noto Sans JP",sans-serif; -webkit-font-smoothing:antialiased; }
   button { font:inherit; color:inherit; background:none; border:none; cursor:pointer; padding:0; }
   button:disabled { opacity:.4; cursor:default; }
-  button:focus-visible, a:focus-visible, input:focus-visible, summary:focus-visible { outline:2px solid var(--accent); outline-offset:3px; border-radius:8px; }
+  :focus-visible { outline:2px solid var(--hl); outline-offset:2px; border-radius:8px; }
   svg { display:block; fill:currentColor; }
   .hidden { display:none !important; }
+  .sr { position:absolute !important; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; }
+  ::-webkit-scrollbar { width:10px; height:10px; } ::-webkit-scrollbar-thumb { background:rgba(255,255,255,.14); border-radius:5px; border:3px solid transparent; background-clip:padding-box; }
+  .mono { font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace; }
 
-  /* ---- 全体の骨組み：上の見出し / 中身 / 下の再生バー ---- */
-  .app { height:100vh; display:grid; grid-template-rows:auto 1fr; }
-  .topbar { display:flex; align-items:center; justify-content:space-between; padding:14px 28px; }
-  .topbar h1 { font-size:13px; font-weight:600; letter-spacing:.1em; color:var(--sub); margin:0; }
-  .topbar .tools { display:flex; gap:6px; align-items:center; }
-
-  .icon-btn { width:40px; height:40px; border-radius:50%; display:grid; place-items:center; color:var(--sub); transition:background .15s,color .15s; }
-  .icon-btn:hover { background:var(--panel-strong); color:var(--text); }
+  /* ===== 共通の部品 ===== */
+  .icon-btn { width:40px; height:40px; flex:none; border-radius:50%; display:grid; place-items:center; color:var(--sub); transition:background .15s,color .15s; }
+  .icon-btn:hover { background:var(--panel-2); color:var(--text); }
   .icon-btn svg { width:20px; height:20px; }
-  .icon-btn.on { color:var(--accent); }
-  .chip { display:inline-flex; align-items:center; gap:8px; height:36px; padding:0 14px; border-radius:999px; background:var(--panel); color:var(--text); font-size:13px; text-decoration:none; transition:background .15s; white-space:nowrap; }
-  .chip:hover { background:var(--panel-strong); }
+  .chip { display:inline-flex; align-items:center; gap:7px; height:36px; padding:0 15px; border-radius:999px; background:var(--panel-2); color:var(--text); font-size:13px; text-decoration:none; white-space:nowrap; transition:background .15s; }
+  .chip:hover { background:var(--panel-3); }
   .chip svg { width:16px; height:16px; }
+  .chip.sm { height:28px; padding:0 11px; font-size:12px; }
+  .chip.on { color:var(--hl); box-shadow:inset 0 0 0 1px color-mix(in srgb, var(--hl) 55%, transparent); }
   .chip[aria-disabled="true"] { opacity:.4; pointer-events:none; }
-
-  .primary { background:var(--accent); color:#000; font-weight:700; border-radius:999px; padding:12px 28px; font-size:15px; min-height:44px; transition:transform .1s,background .15s; }
-  .primary:hover { background:#3ee47a; }
-  .primary:active { transform:scale(.97); }
-  .ghost { background:var(--panel-strong); border-radius:999px; padding:9px 18px; font-size:14px; min-height:40px; }
-  .ghost:hover { background:rgba(255,255,255,.2); }
-  .field { width:100%; padding:11px 14px; border-radius:10px; border:1px solid var(--line); background:rgba(0,0,0,.45); color:var(--text); font-size:14px; }
-  .field:focus { border-color:var(--accent); outline:none; }
+  .primary { background:var(--accent); color:#000; font-weight:700; border-radius:999px; padding:0 22px; height:42px; font-size:14px; transition:transform .1s,background .15s; white-space:nowrap; }
+  .primary:hover { background:#3be477; } .primary:active { transform:scale(.97); }
+  .primary.sm { height:36px; padding:0 16px; font-size:13px; flex:none; }
+  .ghost { background:var(--panel-2); border-radius:999px; padding:0 18px; height:40px; font-size:14px; }
+  .ghost:hover { background:var(--panel-3); }
+  .field { width:100%; height:40px; padding:0 13px; border-radius:10px; border:1px solid var(--line); background:rgba(0,0,0,.4); color:var(--text); font-size:14px; transition:border-color .15s; }
+  .field:focus { border-color:var(--hl); outline:none; }
+  textarea.field { height:auto; padding:10px 13px; line-height:1.6; resize:vertical; font-family:inherit; }
+  select.field { appearance:auto; } select.field option { background:#1c1a18; color:var(--text); }
   .note { font-size:12px; color:var(--sub); line-height:1.7; margin:0; }
-  details.fold { background:var(--panel); border-radius:12px; padding:2px 14px; }
+  .eq { display:inline-flex; gap:2px; align-items:flex-end; height:12px; flex:none; }
+  .eq i { display:block; width:3px; height:25%; border-radius:1px; background:var(--hl); }
+  body:not(.is-paused) .eq i { animation:eq .8s ease-in-out infinite alternate; }
+  body:not(.is-paused) .eq i:nth-child(2) { animation-duration:.55s; animation-delay:-.2s; }
+  body:not(.is-paused) .eq i:nth-child(3) { animation-duration:.7s; animation-delay:-.4s; }
+  @keyframes eq { from { height:20%; } to { height:100%; } }
+
+  /* ===== 背景 ===== */
+  #bg { position:fixed; inset:0; z-index:-1; overflow:hidden; background:var(--bg); }
+  #bg canvas { position:absolute; left:-15%; top:-15%; width:130%; height:130%; opacity:0; transition:opacity 1.6s ease; animation:bgdrift 46s ease-in-out infinite alternate; }
+  #bg canvas.show { opacity:.75; }
+  body.is-paused #bg canvas, body.still #bg canvas { animation-play-state:paused; }
+  @keyframes bgdrift { from { transform:scale(1.05) rotate(0deg); } to { transform:scale(1.25) rotate(7deg); } }
+  #bg .shade { position:absolute; inset:0; background:radial-gradient(110% 80% at 30% 40%, rgba(13,11,10,.25), rgba(13,11,10,.85)); }
+  #bg .flash { position:absolute; inset:0; background:radial-gradient(45% 45% at 30% 55%, color-mix(in srgb, var(--hl) 20%, transparent), transparent 70%); opacity:0; transition:opacity 1.1s ease-out; }
+  #bg .flash.on { opacity:1; transition:opacity .06s; }
+  .grain { position:fixed; inset:0; z-index:30; pointer-events:none; opacity:.06;
+    background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>"); }
+
+  /* ===== ログイン ===== */
+  .setup { position:fixed; inset:0; display:grid; place-items:center; padding:24px; }
+  .setup .card { width:min(420px,100%); text-align:center; display:flex; flex-direction:column; gap:20px; align-items:center; }
+  .setup .logo { width:84px; height:84px; border-radius:24px; background:var(--panel-2); display:grid; place-items:center; color:var(--hl); }
+  .setup .logo svg { width:42px; height:42px; }
+  .setup h1 { margin:0; font-size:22px; }
+  .setup p { margin:0; color:var(--sub); font-size:14px; line-height:1.8; }
+  details.fold { width:100%; text-align:left; background:var(--panel); border-radius:12px; padding:2px 14px; }
   details.fold summary { color:var(--sub); font-size:13px; padding:11px 0; cursor:pointer; }
   details.fold[open] summary { color:var(--text); }
   details.fold .body { padding:0 0 14px; display:flex; flex-direction:column; gap:10px; }
 
-  /* ---- ログイン前 ---- */
-  #setup { align-self:center; justify-self:center; width:min(420px, 90vw); text-align:center; display:flex; flex-direction:column; gap:20px; align-items:center; padding-bottom:10vh; }
-  #setup .logo { width:80px; height:80px; border-radius:22px; background:var(--panel-strong); display:grid; place-items:center; color:var(--accent); }
-  #setup .logo svg { width:40px; height:40px; }
-  #setup p { margin:0; color:var(--sub); font-size:14px; line-height:1.8; }
-  #setup details { width:100%; text-align:left; }
+  /* ===== 部屋（全体の骨組み） ===== */
+  .room { position:fixed; inset:0; display:grid; grid-template-rows:60px 176px minmax(0,1fr); }
+  .room-top { display:flex; align-items:center; justify-content:space-between; padding:0 28px; }
+  .brand { display:flex; align-items:center; gap:10px; font-size:13px; font-weight:700; letter-spacing:.08em; color:var(--sub); min-width:0; }
+  .top-pl { color:var(--text); font-weight:600; letter-spacing:.02em; max-width:36vw; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .top-pl:not(:empty)::before { content:"·"; color:var(--sub); margin:0 8px 0 2px; }
+  .top-tools { display:flex; gap:8px; align-items:center; }
 
-  /* ---- ログイン後 ---- */
-  #playerArea { display:grid; grid-template-rows:1fr auto; min-height:0; }
-  .content { display:grid; grid-template-columns:minmax(0,1.15fr) minmax(360px,1fr); gap:56px; padding:4px 56px 28px; min-height:0; width:100%; max-width:1440px; margin:0 auto; }
+  /* ----- レコード棚（次にかかる曲） ----- */
+  .shelf-wrap { position:relative; padding:0 28px; min-width:0; }
+  .shelf-label { position:absolute; left:36px; top:0; z-index:1; font-size:10px; font-weight:800; letter-spacing:.22em; color:var(--sub); }
+  .shelf { display:flex; align-items:flex-end; gap:14px; height:100%; overflow-x:auto; overflow-y:hidden; padding:30px 8px 22px; scrollbar-width:none; scroll-behavior:smooth; }
+  .shelf::-webkit-scrollbar { display:none; }
+  /* 棚板 */
+  .shelf-wrap::after { content:""; position:absolute; left:20px; right:20px; bottom:10px; height:14px; border-radius:3px; pointer-events:none;
+    background:linear-gradient(#6b4528,#46301d 55%,#2c1d12); box-shadow:0 10px 18px rgba(0,0,0,.55), inset 0 1px 0 rgba(255,255,255,.15); }
+  .sleeve { position:relative; flex:none; width:100px; height:100px; border-radius:3px; background:var(--panel-2); margin-bottom:12px;
+    box-shadow:0 10px 18px rgba(0,0,0,.5), inset 0 0 0 1px rgba(255,255,255,.06); transform-origin:50% 100%; transition:transform .25s cubic-bezier(.2,.8,.2,1), box-shadow .25s; }
+  .sleeve img { width:100%; height:100%; object-fit:cover; border-radius:3px; display:block; }
+  .sleeve img:not([src]) { visibility:hidden; }
+  .sleeve:not(:disabled):hover, .sleeve:not(:disabled):focus-visible { transform:translateY(-10px) rotate(-1.5deg); box-shadow:0 18px 26px rgba(0,0,0,.6); }
+  .sleeve:disabled { opacity:1; cursor:default; }
+  .sleeve.now { width:114px; height:114px; transform:translateY(-2px); box-shadow:0 0 0 2px var(--hl), 0 16px 30px rgba(0,0,0,.6), 0 0 30px color-mix(in srgb, var(--hl) 35%, transparent); }
+  .sleeve.busy { opacity:.5; }
+  .sleeve .tag { position:absolute; top:-9px; left:6px; font-size:10px; font-weight:800; padding:1px 6px; border-radius:3px; background:#1d1a17; color:var(--sub); box-shadow:0 2px 6px rgba(0,0,0,.5); letter-spacing:.05em; }
+  .sleeve.now .tag { background:var(--hl); color:#1a1208; }
+  .sleeve .cap { position:absolute; left:0; right:0; bottom:0; padding:18px 7px 6px; font-size:11px; font-weight:600; line-height:1.3; text-align:left; color:#fff;
+    background:linear-gradient(transparent, rgba(0,0,0,.85)); border-radius:0 0 3px 3px; opacity:0; transition:opacity .2s; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+  .sleeve:hover .cap, .sleeve:focus-visible .cap, .sleeve.now .cap { opacity:1; }
+  .shelf-more { flex:none; align-self:flex-end; margin-bottom:12px; height:100px; width:84px; border-radius:6px; border:1px dashed var(--line); color:var(--sub); font-size:12px; line-height:1.5; }
+  .shelf-more:hover { color:var(--text); border-color:var(--sub); }
+  .shelf-empty { align-self:center; margin-bottom:14px; color:var(--sub); font-size:13px; }
 
-  .left { display:flex; flex-direction:column; justify-content:center; align-items:center; gap:28px; min-height:0; }
+  /* ----- 下段：ターンテーブル ＋ レシーバー ----- */
+  .main-row { display:grid; grid-template-columns:minmax(0,1fr) minmax(480px, 580px); gap:40px; padding:8px 28px 26px; min-height:0; }
+  .deck-col { display:flex; align-items:center; justify-content:center; min-height:0; min-width:0; }
   .stage { position:relative; display:grid; place-items:center; isolation:isolate; }
-  .cover-wrap { position:relative; width:var(--cover); aspect-ratio:1/1; border-radius:12px; overflow:hidden; background:var(--tint); box-shadow:0 24px 60px rgba(0,0,0,.55); transition:transform .4s; }
-  .cover-wrap.paused { transform:scale(.95); }
+  .tilt { transition:transform .35s ease-out; }
+  .cover-wrap { position:relative; width:min(calc(var(--deckW) * .82), 62vh); aspect-ratio:1/1; border-radius:10px; overflow:hidden; background:var(--tint); box-shadow:0 30px 70px rgba(0,0,0,.6); transition:transform .5s cubic-bezier(.2,.8,.2,1); }
+  body.is-paused .cover-wrap { transform:scale(.95); }
   #cover { width:100%; height:100%; object-fit:cover; display:block; }
-  #cover[src=""], #cover:not([src]) { visibility:hidden; }
-  .meta { width:var(--cover); display:flex; flex-direction:column; gap:6px; }
-  #title { font-size:28px; font-weight:700; line-height:1.3; overflow:hidden; text-overflow:ellipsis; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; }
-  #artist { color:var(--sub); font-size:16px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  #cover:not([src]), #cover[src=""] { visibility:hidden; }
+  .glow { position:absolute; width:min(calc(var(--deckW) * .82), 62vh); aspect-ratio:1/1; border-radius:50%; background:radial-gradient(circle,var(--c1),transparent 68%); filter:blur(50px); opacity:0; transition:opacity .8s; z-index:-1; }
+  body:not(.is-paused):not(.still) .glow { opacity:.5; animation:breathe 5s ease-in-out infinite; }
+  @keyframes breathe { 50% { transform:scale(1.1); opacity:.32; } }
+  .ripple { position:absolute; width:min(calc(var(--deckW) * .82), 62vh); aspect-ratio:1/1; border-radius:12px; border:2px solid var(--hl); opacity:.5; pointer-events:none; z-index:-1; animation:ripple 1.6s cubic-bezier(.2,.6,.3,1) forwards; }
+  @keyframes ripple { to { transform:scale(1.18); opacity:0; } }
+  .swap { animation:swapIn .55s ease; }
+  @keyframes swapIn { from { opacity:0; transform:translateY(6px); } }
 
-  .right { display:flex; flex-direction:column; min-height:0; padding:12px 0; }
-  .panel { flex:1; min-height:0; display:flex; flex-direction:column; background:rgba(0,0,0,.28); border:1px solid var(--line); border-radius:18px; backdrop-filter:blur(16px); -webkit-backdrop-filter:blur(16px); overflow:hidden; }
-  .tabs { display:flex; gap:4px; padding:10px; border-bottom:1px solid var(--line); }
-  .tabs button { padding:8px 18px; border-radius:999px; font-size:14px; color:var(--sub); }
-  .tabs button:hover { color:var(--text); }
-  .tabs button[aria-selected="true"] { background:var(--panel-strong); color:var(--text); font-weight:700; }
-  .pane { position:relative; flex:1; min-height:0; overflow:auto; padding:16px 24px 24px; scroll-behavior:smooth; }
-  .pane::-webkit-scrollbar { width:8px; } .pane::-webkit-scrollbar-thumb { background:rgba(255,255,255,.15); border-radius:4px; }
+  /* ----- レシーバー ----- */
+  .receiver { position:relative; display:flex; flex-direction:column; gap:14px; min-height:0; padding:18px 18px 16px; border-radius:18px;
+    background:linear-gradient(172deg,#34312e 0%,#1f1d1b 38%,#161513 100%);
+    box-shadow:0 40px 80px rgba(0,0,0,.6), 0 0 0 1px rgba(255,255,255,.05), inset 0 1px 0 rgba(255,255,255,.12), inset 0 -3px 0 rgba(0,0,0,.5); }
+  .receiver::before { content:""; position:absolute; inset:0; border-radius:inherit; pointer-events:none; background:repeating-linear-gradient(90deg,rgba(255,255,255,.016) 0 1px,transparent 1px 3px); }
+  .rcv-brand { display:flex; justify-content:space-between; align-items:center; font-size:10px; font-weight:800; letter-spacing:.3em; color:#8c857c; padding:0 4px; }
+  .rcv-brand .lamp { display:inline-block; width:7px; height:7px; border-radius:50%; background:#3a2d22; margin-right:8px; vertical-align:1px; }
+  body:not(.is-paused) .rcv-brand .lamp { background:var(--hl); box-shadow:0 0 8px var(--hl); }
+  /* 表示窓：曲名・状態・歌詞 */
+  .rcv-display { position:relative; flex:1; min-height:0; display:flex; flex-direction:column; border-radius:12px; overflow:hidden;
+    background:radial-gradient(120% 90% at 50% 0%, #15120f, #080706); box-shadow:inset 0 0 0 1px #000, inset 0 3px 18px rgba(0,0,0,.9), 0 1px 0 rgba(255,255,255,.07); }
+  .rcv-display::after { content:""; position:absolute; inset:0; pointer-events:none; background:linear-gradient(165deg, rgba(255,255,255,.07), transparent 32%); }
+  .rcv-head { padding:14px 18px 12px; border-bottom:1px solid rgba(255,255,255,.06); }
+  .rcv-status { display:flex; justify-content:space-between; font-size:11px; letter-spacing:.18em; color:var(--hl); text-shadow:0 0 8px color-mix(in srgb, var(--hl) 70%, transparent); }
+  #title { margin-top:6px; font-size:24px; font-weight:800; line-height:1.3; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  #artist { margin-top:2px; color:var(--sub); font-size:14px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  /* 歌詞 */
+  .lyr-tools { display:flex; align-items:center; gap:6px; padding:8px 14px; flex-wrap:wrap; font-size:12px; color:var(--sub); border-bottom:1px solid rgba(255,255,255,.05); }
+  .lyr-tools .sp { flex:1; }
+  .lyr-tools .grp { display:flex; align-items:center; gap:6px; }
+  #lyrOff { min-width:96px; text-align:center; font-variant-numeric:tabular-nums; color:var(--text); }
+  .lyr-cands { padding:12px 14px; border-bottom:1px solid var(--line); max-height:62%; overflow-y:auto; display:flex; flex-direction:column; gap:6px; background:rgba(0,0,0,.35); }
+  .lyr-cands .lyr-row { display:flex; gap:6px; }
+  .lyr-cands .lyr-row > * { flex:1; justify-content:center; }
+  .lyr-search { display:flex; gap:6px; }
+  .lyr-search .field { height:36px; font-size:13px; }
+  .lyr-cands .hint { font-size:12px; color:var(--sub); line-height:1.6; margin:2px; }
+  .cand { text-align:left; padding:9px 12px; border-radius:10px; background:var(--panel); display:flex; justify-content:space-between; gap:12px; font-size:13px; }
+  .cand:hover { background:var(--panel-2); }
+  .cand.sel { box-shadow:inset 0 0 0 1px var(--hl); }
+  .cand .n { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .cand .m { color:var(--sub); white-space:nowrap; font-size:12px; }
+  .lyr-scroll { position:relative; flex:1; min-height:0; overflow-y:auto; padding:0 20px; overscroll-behavior:contain;
+    -webkit-mask-image:linear-gradient(transparent, #000 12%, #000 82%, transparent); mask-image:linear-gradient(transparent, #000 12%, #000 82%, transparent); }
+  #lyrics { padding:18vh 0 30vh; }
+  #lyrics .ln { position:relative; font-size:var(--lyrSize); font-weight:700; line-height:1.48; padding:6px 10px; margin:0 -10px 2px; border-radius:10px;
+    color:rgba(255,255,255,.26); cursor:pointer; transition:color .45s ease, background .15s; overflow-wrap:anywhere; }
+  #lyrics .ln:hover { background:rgba(255,255,255,.05); }
+  #lyrics .ln.near { color:rgba(255,255,255,.5); }
+  #lyrics .ln.active { color:#fff; text-shadow:0 0 22px color-mix(in srgb, var(--hl) 40%, transparent); }
+  body.wipe #lyrics .ln.active { color:rgba(255,255,255,.4); text-shadow:none; }
+  body.wipe #lyrics .ln.active .ch.on { color:#fff; text-shadow:0 0 18px color-mix(in srgb, var(--hl) 60%, transparent); }
+  body.wipe #lyrics .ln.active .ch.cur { color:transparent; -webkit-background-clip:text; background-clip:text;
+    background-image:linear-gradient(90deg, #fff calc(var(--cp,0%) - 12%), rgba(255,255,255,.4) calc(var(--cp,0%) + 12%)); }
+  #lyrics .ch { transition:color .15s linear; }
+  #lyrics .gap { height:0; opacity:0; overflow:hidden; display:flex; gap:10px; align-items:center; padding-left:2px; transition:height .45s ease, opacity .45s ease; }
+  #lyrics .gap.active { height:calc(var(--lyrSize) * 1.9); opacity:1; }
+  #lyrics .gap i { width:calc(var(--lyrSize) * .42); height:calc(var(--lyrSize) * .42); border-radius:50%; background:var(--hl); opacity:.25; transform:scale(.8); transition:opacity .3s, transform .3s; box-shadow:0 0 10px var(--hl); }
+  #lyrics .gap i.on { opacity:1; transform:scale(1); }
+  #lyrics .msg { font-size:14px; color:var(--sub); line-height:1.9; font-weight:500; }
+  #lyrics.plain { padding:20px 0 40px; }
+  #lyrics.plain .ln { font-size:16px; font-weight:500; color:var(--text); cursor:default; padding:1px 0; margin:0; line-height:1.95; }
+  #lyrics.plain .ln:hover { background:none; }
+  #lyricsSrc { padding:0 0 26px; }
 
-  .tracklist { list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:4px; counter-reset:q; }
-  .tracklist li.qhead { font-size:11px; font-weight:700; letter-spacing:.12em; color:var(--sub); margin:14px 8px 4px; }
-  .tracklist li.qhead:first-child { margin-top:0; }
-  .tracklist li.empty, .tracklist li.qnote { padding:4px 8px; }
-  .tracklist li.qnote { font-size:12px; color:var(--sub); line-height:1.7; margin-top:8px; }
-  .tracklist .row { width:100%; display:flex; gap:14px; align-items:center; padding:7px 8px; border-radius:10px; text-align:left; transition:background .15s; }
-  .tracklist .row:not(:disabled):hover { background:var(--panel-strong); }
+  /* 再生位置：ラジオの周波数目盛りのような帯 */
+  .dial { display:flex; align-items:center; gap:12px; padding:0 4px; font-size:12px; color:var(--hl); font-variant-numeric:tabular-nums; text-shadow:0 0 6px color-mix(in srgb, var(--hl) 60%, transparent); }
+  .dial span { width:42px; flex:none; } .dial span:first-child { text-align:right; }
+  .dial .scale { position:relative; flex:1; height:26px; border-radius:6px; background:#0a0908; box-shadow:inset 0 0 0 1px #000, inset 0 2px 8px rgba(0,0,0,.8);
+    background-image:repeating-linear-gradient(90deg, rgba(255,255,255,.18) 0 1px, transparent 1px 10px), repeating-linear-gradient(90deg, rgba(255,255,255,.35) 0 1px, transparent 1px 50px);
+    background-size:100% 6px, 100% 11px; background-position:0 100%, 0 100%; background-repeat:repeat-x; }
+  input[type=range] { -webkit-appearance:none; appearance:none; width:100%; height:20px; background:transparent; cursor:pointer; margin:0; --p:0%; }
+  #seekBar { position:absolute; inset:0; height:26px; }
+  #seekBar::-webkit-slider-runnable-track { height:26px; background:linear-gradient(to right, color-mix(in srgb, var(--hl) 22%, transparent) var(--p), transparent var(--p)); border-radius:6px; }
+  #seekBar::-moz-range-track { height:26px; background:transparent; }
+  #seekBar::-moz-range-progress { height:26px; background:color-mix(in srgb, var(--hl) 22%, transparent); border-radius:6px; }
+  /* 針 */
+  #seekBar::-webkit-slider-thumb { -webkit-appearance:none; width:3px; height:26px; background:var(--hl); box-shadow:0 0 10px var(--hl), 0 0 2px var(--hl); border-radius:2px; }
+  #seekBar::-moz-range-thumb { width:3px; height:26px; border:none; background:var(--hl); box-shadow:0 0 10px var(--hl); border-radius:2px; }
+
+  /* 操作：押し込める大きなボタンと音量つまみ */
+  .controls { display:flex; align-items:center; gap:12px; padding:2px 4px 0; }
+  .hw { position:relative; width:58px; height:52px; flex:none; border-radius:12px; display:grid; place-items:center; color:#d9d4cc;
+    background:linear-gradient(#3e3a36,#24211f); box-shadow:0 5px 0 #0c0b0a, 0 8px 14px rgba(0,0,0,.5), inset 0 1px 0 rgba(255,255,255,.14);
+    transition:transform .07s, box-shadow .07s, color .15s; }
+  .hw:hover { color:#fff; }
+  .hw:active { transform:translateY(4px); box-shadow:0 1px 0 #0c0b0a, 0 3px 6px rgba(0,0,0,.5), inset 0 1px 0 rgba(255,255,255,.14); }
+  .hw svg { width:24px; height:24px; }
+  .hw.small { width:46px; height:44px; color:#9a948c; }
+  .hw.small svg { width:20px; height:20px; }
+  .hw.on { color:var(--hl); }
+  .hw.on::after { content:""; position:absolute; bottom:5px; left:50%; width:5px; height:5px; margin-left:-2.5px; border-radius:50%; background:var(--hl); box-shadow:0 0 6px var(--hl); }
+  .badge[data-mode="track"]::before { content:"1"; position:absolute; top:5px; right:8px; font-size:10px; font-weight:800; color:var(--hl); }
+  #toggleBtn { width:86px; height:62px; color:#1a1208; background:linear-gradient(#f2c27d, var(--hl)); box-shadow:0 5px 0 #6b4a1e, 0 10px 18px rgba(0,0,0,.5), inset 0 1px 0 rgba(255,255,255,.5); }
+  #toggleBtn:active { box-shadow:0 1px 0 #6b4a1e, 0 4px 8px rgba(0,0,0,.5), inset 0 1px 0 rgba(255,255,255,.5); }
+  #toggleBtn svg { width:30px; height:30px; }
+  body:not(.is-paused) #toggleBtn { box-shadow:0 5px 0 #6b4a1e, 0 10px 18px rgba(0,0,0,.5), inset 0 1px 0 rgba(255,255,255,.5), 0 0 30px color-mix(in srgb, var(--hl) 55%, transparent); }
+  .controls .sp { flex:1; }
+  .vol { display:flex; flex-direction:column; align-items:center; gap:4px; }
+  .knob { --rot:80deg; position:relative; width:64px; height:64px; border-radius:50%; cursor:ns-resize; touch-action:none;
+    background:radial-gradient(circle at 38% 30%, #6a655f, #2a2724 62%, #1a1816); box-shadow:0 6px 14px rgba(0,0,0,.6), inset 0 1px 0 rgba(255,255,255,.2), 0 0 0 4px #121110, 0 0 0 5px rgba(255,255,255,.06); }
+  .knob::before { content:""; position:absolute; inset:-11px; border-radius:50%; pointer-events:none;
+    background:conic-gradient(from -135deg, color-mix(in srgb, var(--hl) 80%, transparent) 0 var(--fill,0deg), rgba(255,255,255,.08) var(--fill,0deg) 270deg, transparent 270deg);
+    -webkit-mask:radial-gradient(circle, transparent 0 41px, #000 42px 44px, transparent 45px); mask:radial-gradient(circle, transparent 0 41px, #000 42px 44px, transparent 45px); }
+  .knob::after { content:""; position:absolute; left:50%; top:7px; width:4px; height:15px; margin-left:-2px; border-radius:2px; background:var(--hl); box-shadow:0 0 6px var(--hl); transform-origin:50% 25px; transform:rotate(var(--rot)); }
+  .vol .lbl { font-size:9px; font-weight:800; letter-spacing:.24em; color:#8c857c; display:flex; align-items:center; gap:6px; }
+  .vol .lbl button { color:#8c857c; font-size:9px; letter-spacing:.1em; } .vol .lbl button:hover { color:var(--text); }
+  .vol .lbl button.muted { color:var(--hl); }
+  .rcv-sub { display:flex; gap:6px; flex-wrap:nowrap; padding:2px 4px 0; }
+  .rcv-sub .chip { height:32px; padding:0 12px; font-size:12px; }
+
+  /* ===== 引き出し（曲一覧・曲を追加・次に再生） ===== */
+  .scrim { position:fixed; inset:0; background:rgba(0,0,0,.45); z-index:11; opacity:0; pointer-events:none; transition:opacity .25s; }
+  body.drawer-open .scrim { opacity:1; pointer-events:auto; }
+  .drawer { position:fixed; top:0; right:0; bottom:0; width:min(480px, 94vw); z-index:12; display:flex; flex-direction:column;
+    background:#171513; border-left:1px solid var(--line); box-shadow:-30px 0 80px rgba(0,0,0,.55); transform:translateX(104%); transition:transform .32s cubic-bezier(.2,.8,.2,1); }
+  body.drawer-open .drawer { transform:none; }
+  .drawer .tabs { display:flex; align-items:center; gap:4px; padding:14px 12px 10px 16px; border-bottom:1px solid var(--line); }
+  .drawer .tabs [role=tab] { height:36px; padding:0 15px; border-radius:999px; font-size:14px; color:var(--sub); }
+  .drawer .tabs [role=tab]:hover { color:var(--text); }
+  .drawer .tabs [role=tab][aria-selected="true"] { background:color-mix(in srgb, var(--hl) 22%, rgba(255,255,255,.06)); color:var(--text); font-weight:700; }
+  .drawer .tabs .sp { flex:1; }
+  .pane { flex:1; min-height:0; overflow-y:auto; padding:0 12px 20px; }
+  .pane-head { position:sticky; top:0; z-index:3; margin:0 -12px 8px; padding:14px 16px 12px; display:flex; flex-direction:column; gap:10px; background:#171513; border-bottom:1px solid var(--line); }
+  .row2 { display:flex; gap:8px; align-items:center; }
+  .row2 label { font-size:12px; color:var(--sub); white-space:nowrap; }
+  .pl-name { font-size:16px; font-weight:800; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; flex:1; }
+  #plCount { font-size:12px; color:var(--sub); white-space:nowrap; font-variant-numeric:tabular-nums; }
+  .history { display:flex; gap:6px; overflow-x:auto; scrollbar-width:none; }
+  .history::-webkit-scrollbar { display:none; }
+  .history .hist-label { display:none; }
+  .history button { flex:none; display:flex; align-items:center; gap:8px; max-width:200px; height:36px; padding:0 12px 0 4px; border-radius:999px; background:var(--panel); font-size:12px; color:var(--sub); }
+  .history button:hover { background:var(--panel-2); color:var(--text); }
+  .history button.cur { color:var(--text); box-shadow:inset 0 0 0 1px color-mix(in srgb, var(--hl) 60%, transparent); }
+  .history img, .history .ph { width:28px; height:28px; border-radius:50%; object-fit:cover; background:var(--panel-3); flex:none; }
+  .history span:last-child { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .add-gate { display:flex; flex-direction:column; gap:14px; align-items:flex-start; padding:18px 6px; }
+
+  /* 曲の並び */
+  .tracklist { list-style:none; margin:0; padding:0; }
+  .tracklist li { content-visibility:auto; contain-intrinsic-size:auto 58px; }
+  .tracklist li.qhead { content-visibility:visible; font-size:11px; font-weight:800; letter-spacing:.14em; color:var(--sub); margin:16px 10px 6px; }
+  .tracklist li.qhead:first-child { margin-top:6px; }
+  .tracklist li.empty, .tracklist li.qnote { content-visibility:visible; padding:10px; font-size:13px; color:var(--sub); line-height:1.8; }
+  .tracklist .row { width:100%; display:flex; gap:12px; align-items:center; padding:7px 10px; border-radius:10px; text-align:left; transition:background .12s; }
+  .tracklist .row:not(:disabled):hover { background:var(--panel-2); }
   .tracklist .row:disabled { opacity:1; cursor:default; }
   .tracklist .row.busy { opacity:.5; }
-  .tracklist .num { width:22px; flex:none; text-align:center; color:var(--sub); font-size:13px; font-variant-numeric:tabular-nums; }
+  .tracklist .num { width:24px; flex:none; text-align:center; color:var(--dim); font-size:12px; font-variant-numeric:tabular-nums; }
   .tracklist .row:not(:disabled):hover .num { font-size:0; }
-  .tracklist .row:not(:disabled):hover .num::before { content:"▶"; font-size:12px; color:var(--text); }
-  .tracklist .d { margin-left:auto; padding-left:12px; color:var(--sub); font-size:12px; font-variant-numeric:tabular-nums; }
-  .tracklist li.current .row { background:color-mix(in srgb, var(--hl) 16%, transparent); }
-  .tracklist li.current .n { color:var(--hl); }
+  .tracklist .row:not(:disabled):hover .num::before { content:"▶"; font-size:11px; color:var(--text); }
+  #addList .row:not(:disabled):hover .num::before { content:"＋"; font-size:14px; color:var(--hl); }
+  .tracklist img { width:44px; height:44px; border-radius:4px; object-fit:cover; background:var(--panel-2); flex:none; box-shadow:0 3px 8px rgba(0,0,0,.4); }
   .tracklist img:not([src]) { visibility:hidden; }
-  .tracklist img { width:48px; height:48px; border-radius:6px; object-fit:cover; background:var(--tint); flex:none; }
-  .tracklist .txt { min-width:0; }
-  .tracklist .n { font-size:15px; font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-  .tracklist .a { font-size:13px; color:var(--sub); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-  .empty { color:var(--sub); font-size:14px; line-height:1.8; }
+  .tracklist .txt { min-width:0; flex:1; }
+  .tracklist .n { font-size:14px; font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .tracklist .a { font-size:12px; color:var(--sub); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; margin-top:2px; }
+  .tracklist .d { flex:none; color:var(--dim); font-size:12px; font-variant-numeric:tabular-nums; }
+  .tracklist .num .eq { display:none; }
+  .tracklist li.current .row { background:color-mix(in srgb, var(--hl) 15%, transparent); }
+  .tracklist li.current .n { color:var(--hl); }
+  .tracklist li.current .num { font-size:0; display:flex; justify-content:center; }
+  .tracklist li.current .num .eq { display:inline-flex; }
+  .tracklist li.added .row { opacity:.55; }
+  .tracklist li.added .d::after { content:"・追加済み"; color:var(--hl); }
 
-  .chip.sm { height:30px; padding:0 12px; font-size:12px; }
-
-  /* ---- 下の再生バー ---- */
-  .bar { display:grid; grid-template-columns:1fr minmax(420px,640px) 1fr; align-items:center; gap:24px; padding:12px 24px 16px; background:rgba(0,0,0,.4); border-top:1px solid var(--line); backdrop-filter:blur(24px); -webkit-backdrop-filter:blur(24px); transition:opacity .5s; }
-  .bar .l { display:flex; gap:8px; }
-  .bar .c { display:flex; flex-direction:column; gap:4px; }
-  .bar .r { display:flex; justify-content:flex-end; align-items:center; gap:4px; }
-  .controls { display:flex; justify-content:center; align-items:center; gap:20px; }
-  .controls .icon-btn { color:var(--text); }
-  .controls .icon-btn.small { color:var(--sub); }
-  .controls .icon-btn.small.on { color:var(--accent); }
-  #toggleBtn { width:48px; height:48px; border-radius:50%; background:#fff; color:#000; display:grid; place-items:center; transition:transform .1s; }
-  #toggleBtn:hover { transform:scale(1.06); }
-  #toggleBtn:active { transform:scale(.95); }
-  #toggleBtn svg { width:24px; height:24px; }
-  .badge { position:relative; }
-  .badge[data-mode="track"]::after { content:"1"; position:absolute; right:6px; top:4px; font-size:9px; font-weight:700; color:var(--accent); }
-  .seek { display:flex; align-items:center; gap:10px; font-size:12px; color:var(--sub); font-variant-numeric:tabular-nums; }
-  .seek span { width:40px; flex:none; } .seek span:first-child { text-align:right; }
-  .volume { display:flex; align-items:center; gap:4px; }
-  .volume input { width:110px; }
-  .sep { width:1px; height:22px; background:var(--line); margin:0 6px; }
-
-  input[type=range] { -webkit-appearance:none; appearance:none; width:100%; height:20px; background:transparent; cursor:pointer; margin:0; --p:0%; }
-  input[type=range]::-webkit-slider-runnable-track { height:4px; border-radius:2px; background:linear-gradient(to right,var(--text) var(--p),rgba(255,255,255,.2) var(--p)); }
-  input[type=range]::-moz-range-track { height:4px; border-radius:2px; background:rgba(255,255,255,.2); }
-  input[type=range]::-moz-range-progress { height:4px; border-radius:2px; background:var(--text); }
-  input[type=range]::-webkit-slider-thumb { -webkit-appearance:none; width:12px; height:12px; border-radius:50%; background:#fff; margin-top:-4px; opacity:0; transition:opacity .15s; }
-  input[type=range]::-moz-range-thumb { width:12px; height:12px; border:none; border-radius:50%; background:#fff; opacity:0; }
-  input[type=range]:hover::-webkit-slider-thumb, input[type=range]:focus-visible::-webkit-slider-thumb { opacity:1; }
-  input[type=range]:hover::-moz-range-thumb { opacity:1; }
-  input[type=range]:hover::-webkit-slider-runnable-track { background:linear-gradient(to right,var(--accent) var(--p),rgba(255,255,255,.2) var(--p)); }
-  input[type=range]:hover::-moz-range-progress { background:var(--accent); }
-
-  /* ---- 小窓（プレイリスト選択・設定） ---- */
-  .modal { position:fixed; inset:0; z-index:10; display:grid; place-items:center; background:rgba(0,0,0,.6); }
-  .modal .card { width:min(520px, 92vw); max-height:84vh; overflow:auto; background:#1c1c1c; border:1px solid var(--line); border-radius:18px; padding:24px; display:flex; flex-direction:column; gap:14px; animation:pop .18s ease-out; box-shadow:0 30px 80px rgba(0,0,0,.6); }
+  /* ===== 小窓（設定） ===== */
+  .modal { position:fixed; inset:0; z-index:20; display:grid; place-items:center; background:rgba(0,0,0,.6); }
+  .modal .card { width:min(540px,92vw); max-height:86vh; overflow:auto; background:#1c1a18; border:1px solid var(--line); border-radius:18px; padding:24px; display:flex; flex-direction:column; gap:6px; animation:pop .18s ease-out; box-shadow:0 30px 80px rgba(0,0,0,.6); }
   @keyframes pop { from { transform:scale(.97); opacity:0; } }
-  .modal h2 { margin:0; font-size:17px; }
-  .modal .foot { display:flex; justify-content:flex-end; gap:8px; margin-top:4px; }
-  .history { display:flex; flex-direction:column; gap:4px; }
-  .history .hist-label { font-size:12px; color:var(--sub); margin:6px 0 2px; }
-  .history button { text-align:left; padding:10px 12px; border-radius:10px; background:var(--panel); font-size:13px; color:var(--sub); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-  .history button:hover { background:var(--panel-strong); color:var(--text); }
-  .keys { display:grid; grid-template-columns:auto 1fr; gap:6px 14px; font-size:13px; color:var(--sub); margin:0; }
+  .modal h2 { margin:0 0 8px; font-size:18px; }
+  .modal h3 { margin:14px 0 2px; font-size:12px; color:var(--sub); letter-spacing:.1em; font-weight:700; }
+  .set-row { display:flex; justify-content:space-between; align-items:center; gap:16px; padding:10px 0; border-bottom:1px solid var(--line); font-size:14px; }
+  .set-row small { display:block; color:var(--sub); font-size:12px; margin-top:3px; line-height:1.5; }
+  .sw { -webkit-appearance:none; appearance:none; width:42px; height:24px; border-radius:12px; background:var(--panel-3); position:relative; cursor:pointer; flex:none; transition:background .2s; margin:0; }
+  .sw::after { content:""; position:absolute; left:3px; top:3px; width:18px; height:18px; border-radius:50%; background:#fff; transition:transform .2s; }
+  .sw:checked { background:var(--hl); } .sw:checked::after { transform:translateX(18px); }
+  .seg { display:flex; background:var(--panel); border-radius:999px; padding:3px; flex:none; }
+  .seg button { height:28px; padding:0 14px; border-radius:999px; font-size:13px; color:var(--sub); }
+  .seg button[aria-pressed="true"] { background:var(--panel-3); color:var(--text); font-weight:700; }
+  .keys { display:grid; grid-template-columns:auto 1fr; gap:7px 14px; font-size:13px; color:var(--sub); margin:6px 0 0; }
   .keys dt { text-align:right; } .keys dd { margin:0; }
-  kbd { font-family:inherit; font-size:12px; background:var(--panel-strong); border-radius:5px; padding:1px 7px; color:var(--text); }
+  kbd { font-family:inherit; font-size:12px; background:var(--panel-3); border-radius:5px; padding:1px 7px; color:var(--text); }
   #log { white-space:pre-wrap; max-height:180px; overflow:auto; background:rgba(0,0,0,.35); padding:10px; border-radius:10px; line-height:1.6; font-size:12px; color:var(--sub); }
-
-  #toast { position:fixed; left:50%; bottom:110px; transform:translate(-50%,16px); background:#2a2a2a; color:var(--text); padding:10px 18px; border-radius:10px; font-size:13px; opacity:0; pointer-events:none; transition:.25s; max-width:60vw; z-index:20; text-align:center; box-shadow:0 10px 30px rgba(0,0,0,.4); }
+  .modal .foot { display:flex; justify-content:flex-end; gap:8px; margin-top:14px; }
+  #toast { position:fixed; left:50%; bottom:28px; transform:translate(-50%,12px); background:#2a2724; color:var(--text); padding:10px 18px; border-radius:10px; font-size:13px; opacity:0; pointer-events:none; transition:.22s; max-width:60vw; z-index:40; text-align:center; box-shadow:0 10px 30px rgba(0,0,0,.45); }
   #toast.show { opacity:1; transform:translate(-50%,0); }
 
-  /* ---- 背景：ジャケットのぼかしと、色のゆらぎ ---- */
-  #bg::after { content:""; position:absolute; inset:0; background:linear-gradient(180deg,rgba(0,0,0,.15),rgba(0,0,0,.55)); }
-
-  .glow { position:absolute; width:var(--cover); aspect-ratio:1/1; border-radius:50%; background:radial-gradient(circle,var(--c1),transparent 68%); filter:blur(50px); opacity:0; transition:opacity .8s, background 1.5s; z-index:-1; }
-  body:not(.is-paused) .glow { opacity:.6; animation:breathe 5s ease-in-out infinite; }
-  @keyframes breathe { 50% { transform:scale(1.1); opacity:.38; } }
-
-  /* ---- レコード表示 ---- */
-  body.vinyl .cover-wrap { border-radius:50%; animation:spin 14s linear infinite; animation-play-state:paused; box-shadow:0 0 0 10px #0d0d0d, 0 24px 60px rgba(0,0,0,.6); }
-  body.vinyl:not(.is-paused) .cover-wrap { animation-play-state:running; }
-  body.vinyl .cover-wrap::after { content:""; position:absolute; inset:0; border-radius:50%; pointer-events:none;
-    background:radial-gradient(circle, #0d0d0d 0 3.2%, rgba(255,255,255,.35) 3.3% 3.8%, transparent 4% 100%),
-               repeating-radial-gradient(circle, rgba(0,0,0,.22) 0 1px, transparent 1px 5px); }
-  @keyframes spin { to { transform:rotate(360deg); } }
-
-  .swap { animation:swapIn .6s ease; }
-  @keyframes swapIn { from { opacity:0; transform:translateY(10px); filter:blur(6px); } }
-
-  /* ---- 没入表示 ---- */
-  .imm-bar { position:fixed; top:20px; right:24px; z-index:5; display:none; gap:8px; transition:opacity .5s; }
+  /* ===== 全画面表示 ===== */
+  .imm-bar { position:fixed; top:18px; right:20px; z-index:15; display:none; gap:8px; transition:opacity .5s; }
   body.immersive .imm-bar { display:flex; }
-  body.immersive .topbar { display:none; }
-  body.immersive .app { grid-template-rows:1fr; }
-  body.immersive { --cover:min(64vh, 56vw); }
-  body.immersive .content { grid-template-columns:1fr; padding-top:48px; }
-  body.immersive .right { display:none; }
-  body.immersive .meta { text-align:center; align-items:center; }
-  body.immersive #title { font-size:34px; }
-  body.immersive.lyrics-view .left { display:none; }
-  body.immersive.lyrics-view .right { display:flex; width:min(960px,100%); justify-self:center; }
-  body.immersive.lyrics-view .tabs { display:none; }
-  body.immersive.idle .bar, body.immersive.idle .imm-bar { opacity:0; pointer-events:none; }
+  body.immersive .room { grid-template-rows:0 0 minmax(0,1fr); }
+  body.immersive .room-top, body.immersive .shelf-wrap { visibility:hidden; overflow:hidden; }
+  body.immersive { --deckW:min(calc((100vh - 60px) / .86), calc(100vw - 620px - 120px), 980px); }
+  body.immersive .main-row { padding-top:70px; }
+  body.immersive.lyrics-view .main-row { grid-template-columns:minmax(0,1fr); justify-items:center; }
+  body.immersive.lyrics-view .deck-col { display:none; }
+  body.immersive.lyrics-view .receiver { width:min(1040px, 94vw); }
+  body.immersive.lyrics-view #lyrics .ln { font-size:clamp(30px, 3.2vw, 50px); }
+  body.immersive.lyrics-view #lyrics .gap.active { height:calc(clamp(30px, 3.2vw, 50px) * 1.9); }
+  body.immersive .lyr-tools, body.immersive .lyr-cands, body.immersive .rcv-sub { display:none !important; }
+  body.immersive.idle .imm-bar, body.immersive.idle .controls, body.immersive.idle .dial { opacity:0; transition:opacity .5s; }
   body.immersive.idle { cursor:none; }
 
-  /* ---- 音楽を感じる演出 ---- */
-  :root { --hl:#1ed760; } /* ジャケットから取り出した明るい色（強調色） */
-  /* 再生中を示す小さな波形 */
-  .topbar h1 { display:flex; align-items:center; gap:10px; }
-  .eq { display:inline-flex; gap:2px; align-items:flex-end; height:12px; }
-  .eq i { display:block; width:3px; height:25%; border-radius:1px; background:var(--hl); transition:height .4s; }
-  body:not(.is-paused) .eq i { animation:eq .8s ease-in-out infinite alternate; }
-  body:not(.is-paused) .eq i:nth-child(2) { animation-duration:.55s; animation-delay:-.2s; }
-  body:not(.is-paused) .eq i:nth-child(3) { animation-duration:.7s; animation-delay:-.4s; }
-  @keyframes eq { 0% { height:20%; } 100% { height:100%; } }
-  /* ジャケットがマウスの動きに合わせて少し傾く */
-  .tilt { transition:transform .35s ease-out; transform-style:preserve-3d; }
-  /* 歌詞の行が進むたびに広がる波紋 */
-  .ripple { position:absolute; width:var(--cover); aspect-ratio:1/1; border-radius:14px; border:2px solid var(--hl); opacity:.55; pointer-events:none; z-index:-1; animation:ripple 1.6s cubic-bezier(.2,.6,.3,1) forwards; }
-  body.vinyl .ripple { border-radius:50%; }
-  @keyframes ripple { to { transform:scale(1.22); opacity:0; } }
-  /* 強調色を操作部品に */
-  #seekBar::-webkit-slider-runnable-track, #seekBar:hover::-webkit-slider-runnable-track { background:linear-gradient(to right,var(--hl) var(--p),rgba(255,255,255,.2) var(--p)); }
-  #seekBar::-moz-range-progress, #seekBar:hover::-moz-range-progress { background:var(--hl); }
-  #toggleBtn { transition:transform .1s, box-shadow .6s; }
-  body:not(.is-paused) #toggleBtn { box-shadow:0 0 0 6px color-mix(in srgb, var(--hl) 22%, transparent), 0 0 34px color-mix(in srgb, var(--hl) 55%, transparent); }
-  .controls .icon-btn.small.on, .icon-btn.on { color:var(--hl); }
-  .tabs button[aria-selected="true"] { background:color-mix(in srgb, var(--hl) 22%, rgba(255,255,255,.08)); }
-  #title { font-weight:800; letter-spacing:.01em; }
-  /* レコード表示のトーンアーム：曲の進み具合に合わせて内側へ動く */
-
+  /* 狭いウィンドウ */
+  @media (max-width:1100px){
+    body { overflow:auto; --deckW:min(88vw, 560px); }
+    .room { position:static; display:block; }
+    .main-row { grid-template-columns:1fr; }
+    .receiver { min-height:640px; }
+  }
   /* ==== レコード表示：ターンテーブル（寸法はすべて本体の幅に対する割合 cqw で指定） ==== */
-  .deck { display:none; width:min(calc(var(--cover) * 1.42), 100%, calc((100vh - 330px) / .86)); }
+  .deck { display:none; width:var(--deckW); }
   body.vinyl .stage { display:none; }
   body.vinyl .deck { display:block; }
-  body.vinyl .meta { width:min(calc(var(--cover) * 1.42), 100%, calc((100vh - 330px) / .86)); }
-  body.vinyl .content { padding-right:56px; }
-  body.immersive .deck, body.immersive.vinyl .meta { width:min(100%, calc((100vh - 250px) / .86)); }
   .plinth { position:relative; width:100%; aspect-ratio:1 / .86; border-radius:2.4cqw; container-type:inline-size;
     background:linear-gradient(160deg,#2e2e31 0%,#1a1a1c 45%,#111113 100%);
     box-shadow:0 50px 90px rgba(0,0,0,.6), 0 0 0 1px rgba(255,255,255,.05), inset 0 1px 0 rgba(255,255,255,.1), inset 0 -3px 0 rgba(0,0,0,.6); }
@@ -303,165 +417,19 @@
   body.is-paused .lcd .scroll span { animation-play-state:paused; }
   @keyframes marquee { to { transform:translateX(-100%); } }
   .lcd .time { font-variant-numeric:tabular-nums; }
-  .lyr-row { display:flex; gap:6px; }
-  .lyr-row button { flex:1; justify-content:center; }
-  .lyr-search { display:flex; gap:6px; margin:2px 0; }
-  .lyr-search .field { padding:8px 10px; font-size:13px; }
-  .lyr-search .chip { flex:none; }
-
-  .pl-tools { position:sticky; top:-16px; z-index:2; margin:-16px -24px 10px; padding:12px 24px; display:flex; flex-direction:column; gap:8px; background:rgba(16,16,16,.6); backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px); border-bottom:1px solid var(--line); }
-  .pl-name { font-size:15px; font-weight:700; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-  .pl-row { display:flex; gap:10px; align-items:center; }
-  .pl-row .field { padding:8px 12px; font-size:13px; }
-  #plCount { font-size:12px; color:var(--sub); white-space:nowrap; font-variant-numeric:tabular-nums; }
-  body.immersive .pl-tools { display:none; }
-
-  /* 狭いウィンドウでは縦に並べる */
-  @media (max-width: 900px) {
-    body { overflow:auto; }
-    :root { --cover:min(80vw, 46vh); }
-    .content { grid-template-columns:1fr; gap:24px; padding:4px 20px 20px; overflow:auto; }
-    .right { min-height:420px; }
-    .bar { grid-template-columns:1fr; gap:10px; }
-    .bar .l, .bar .r { justify-content:center; }
-  }
-  /* ===== 背景（小さな画像をぼかして拡大するので軽い） ===== */
-  #bg { position:fixed; inset:0; z-index:-1; overflow:hidden; background:var(--bg); }
-  #bg canvas { position:absolute; left:-15%; top:-15%; width:130%; height:130%; opacity:0; transition:opacity 1.6s ease; animation:bgdrift 46s ease-in-out infinite alternate; }
-  #bg canvas.show { opacity:1; }
-  body.is-paused #bg canvas, body.still #bg canvas { animation-play-state:paused; }
-  @keyframes bgdrift { from { transform:scale(1.05) rotate(0deg); } to { transform:scale(1.25) rotate(7deg); } }
-  #bg .shade { position:absolute; inset:0; background:radial-gradient(120% 90% at 40% 30%, rgba(0,0,0,.2), rgba(0,0,0,.66)); }
-  #bg .flash { position:absolute; inset:0; background:radial-gradient(55% 50% at 30% 45%, color-mix(in srgb, var(--hl) 22%, transparent), transparent 70%); opacity:0; transition:opacity 1.1s ease-out; }
-  #bg .flash.on { opacity:1; transition:opacity .06s; }
-  .grain { position:fixed; inset:0; z-index:30; pointer-events:none; opacity:.05;
-    background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>"); }
-  body.still .glow { animation:none !important; opacity:0 !important; }
-
-  /* ===== 上部：再生中のプレイリスト名 ===== */
-  .top-pl { color:var(--text); font-weight:600; letter-spacing:.02em; max-width:40vw; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-  .top-pl:not(:empty)::before { content:"·"; color:var(--sub); margin:0 8px 0 2px; }
-
-  /* ===== 曲の並び：再生中の印 ===== */
-  .tracklist .num .eq { display:none; }
-  .tracklist li.current .num { font-size:0; display:flex; justify-content:center; }
-  .tracklist li.current .num .eq { display:inline-flex; }
-  .tracklist li { content-visibility:auto; contain-intrinsic-size:auto 62px; }
-  .tracklist li.qhead, .tracklist li.empty, .tracklist li.qnote { content-visibility:visible; }
-  .tracklist img { loading:lazy; }
-
-  /* ===== 最近使ったプレイリスト（名前と画像つき） ===== */
-  .history .hist-label { font-size:12px; color:var(--sub); margin:8px 2px 2px; }
-  .history button { display:flex; align-items:center; gap:10px; padding:6px 12px 6px 6px; }
-  .history button img, .history button .ph { width:34px; height:34px; border-radius:6px; object-fit:cover; background:var(--panel-strong); flex:none; }
-  .history button span:last-child { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-  .history button.cur { color:var(--text); box-shadow:inset 0 0 0 1px color-mix(in srgb, var(--hl) 60%, transparent); }
-
-  /* ===== 歌詞 ===== */
-  body { --lyrSize:24px; }
-  body.lyr-s { --lyrSize:19px; } body.lyr-l { --lyrSize:30px; }
-  #paneLyrics { display:flex; flex-direction:column; overflow:hidden; padding:0; }
-  .lyr-tools { display:flex; align-items:center; gap:6px; padding:10px 16px; flex-wrap:wrap; font-size:12px; color:var(--sub); border-bottom:1px solid var(--line); }
-  .lyr-tools .sp { flex:1; }
-  .lyr-tools .grp { display:flex; align-items:center; gap:6px; }
-  #lyrOff { min-width:96px; text-align:center; font-variant-numeric:tabular-nums; color:var(--text); }
-  .lyr-cands { padding:12px 16px; border-bottom:1px solid var(--line); max-height:60%; overflow-y:auto; display:flex; flex-direction:column; gap:6px; }
-  .lyr-cands .lyr-row { display:flex; gap:6px; }
-  .lyr-cands .lyr-row > * { flex:1; justify-content:center; }
-  .lyr-search { display:flex; gap:6px; }
-  .lyr-search .field { padding:8px 10px; font-size:13px; }
-  .lyr-cands .hint { font-size:12px; color:var(--sub); line-height:1.6; margin:2px; }
-  .cand { text-align:left; padding:9px 12px; border-radius:10px; background:var(--panel); display:flex; justify-content:space-between; gap:12px; font-size:13px; transition:background .12s; }
-  .cand:hover { background:var(--panel-strong); }
-  .cand.sel { box-shadow:inset 0 0 0 1px var(--hl); }
-  .cand .n { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-  .cand .m { color:var(--sub); white-space:nowrap; font-size:12px; }
-  textarea.field { height:auto; padding:10px 13px; line-height:1.6; resize:vertical; font-family:inherit; }
-  .primary.sm { padding:0 16px; min-height:34px; font-size:13px; white-space:nowrap; flex:none; }
-  /* 今の行を上から約4割の位置に保ち、なめらかに送る */
-  .lyr-scroll { position:relative; flex:1; min-height:0; overflow-y:auto; padding:0 24px; overscroll-behavior:contain;
-    -webkit-mask-image:linear-gradient(transparent, #000 9%, #000 84%, transparent); mask-image:linear-gradient(transparent, #000 9%, #000 84%, transparent); }
-  #lyrics { padding:24vh 0 40vh; }
-  #lyrics .ln { position:relative; font-size:var(--lyrSize); font-weight:700; line-height:1.45; padding:6px 10px; margin:0 -10px 2px; border-radius:12px;
-    color:rgba(255,255,255,.28); cursor:pointer; transition:color .45s ease, background .15s; overflow-wrap:anywhere; }
-  #lyrics .ln:hover { background:rgba(255,255,255,.06); }
-  #lyrics .ln.near { color:rgba(255,255,255,.5); }
-  #lyrics .ln.active { color:#fff; }
-  /* 文字ごとのなぞり：歌い終えた文字は白、今の文字は左から白くなり、まだの文字はやや暗い */
-  body.wipe #lyrics .ln.active { color:rgba(255,255,255,.42); }
-  body.wipe #lyrics .ln.active .ch.on { color:#fff; text-shadow:0 0 18px color-mix(in srgb, var(--hl) 55%, transparent); }
-  body.wipe #lyrics .ln.active .ch.cur { color:transparent; -webkit-background-clip:text; background-clip:text;
-    background-image:linear-gradient(90deg, #fff calc(var(--cp,0%) - 12%), rgba(255,255,255,.42) calc(var(--cp,0%) + 12%)); }
-  #lyrics .ch { transition:color .15s linear; }
-  /* 間奏：・・・ */
-  #lyrics .gap { height:0; opacity:0; overflow:hidden; display:flex; gap:10px; align-items:center; padding-left:2px; transition:height .45s ease, opacity .45s ease; }
-  #lyrics .gap.active { height:calc(var(--lyrSize) * 1.9); opacity:1; }
-  #lyrics .gap i { width:calc(var(--lyrSize) * .42); height:calc(var(--lyrSize) * .42); border-radius:50%; background:#fff; opacity:.25; transform:scale(.8); transition:opacity .3s, transform .3s; }
-  #lyrics .gap i.on { opacity:1; transform:scale(1); }
-  #lyrics .msg { font-size:14px; color:var(--sub); line-height:1.9; font-weight:500; }
-  #lyrics.plain { padding:20px 0 40px; }
-  #lyrics.plain .ln { font-size:16px; font-weight:500; color:var(--text); cursor:default; padding:1px 0; margin:0; line-height:1.95; }
-  #lyrics.plain .ln:hover { background:none; }
-  #lyricsSrc { padding:0 0 30px; }
-  body.immersive .lyr-tools, body.immersive .lyr-cands { display:none !important; }
-  body.immersive.lyrics-view .panel { background:transparent; border:none; backdrop-filter:none; -webkit-backdrop-filter:none; }
-  body.immersive.lyrics-view .lyr-scroll { padding:0 8px; }
-  .pl-tools { background:rgba(18,18,20,.94) !important; }
-  body.immersive #lyrics .ln { font-size:clamp(30px, 3.3vw, 52px); }
-  body.immersive #lyrics .gap.active { height:calc(clamp(30px, 3.3vw, 52px) * 1.9); }
-
-  /* ===== 設定 ===== */
-  .modal h3 { margin:14px 0 2px; font-size:12px; color:var(--sub); letter-spacing:.1em; font-weight:700; }
-  .set-row { display:flex; justify-content:space-between; align-items:center; gap:16px; padding:10px 0; border-bottom:1px solid var(--line); font-size:14px; }
-  .set-row small { display:block; color:var(--sub); font-size:12px; margin-top:3px; line-height:1.5; }
-  .sw { -webkit-appearance:none; appearance:none; width:42px; height:24px; border-radius:12px; background:var(--panel-strong); position:relative; cursor:pointer; flex:none; transition:background .2s; margin:0; }
-  .sw::after { content:""; position:absolute; left:3px; top:3px; width:18px; height:18px; border-radius:50%; background:#fff; transition:transform .2s; }
-  .sw:checked { background:var(--hl); } .sw:checked::after { transform:translateX(18px); }
-  .seg { display:flex; background:var(--panel); border-radius:999px; padding:3px; flex:none; }
-  .seg button { height:28px; padding:0 14px; border-radius:999px; font-size:13px; color:var(--sub); }
-  .seg button[aria-pressed="true"] { background:var(--panel-strong); color:var(--text); font-weight:700; }
-
-
-  /* ===== 曲の追加 ===== */
-  .add-gate { display:flex; flex-direction:column; gap:14px; align-items:flex-start; padding:8px 0; }
-  .add-tools { position:sticky; top:-16px; z-index:2; margin:-16px -24px 10px; padding:12px 24px; display:flex; flex-direction:column; gap:8px; background:#161618; border-bottom:1px solid var(--line); isolation:isolate; }
-  .add-tools, .pl-tools { z-index:5 !important; background:#161618 !important; }
-  .add-row { display:flex; gap:8px; align-items:center; }
-  .add-row label { font-size:12px; color:var(--sub); white-space:nowrap; }
-  .add-search { display:flex; gap:6px; flex:1; }
-  .add-search .field, #addTarget { padding:8px 12px; font-size:13px; }
-  #addTarget { flex:1; appearance:auto; }
-  #addTarget option { background:#1c1c1c; color:var(--text); }
-  .tracklist li.added .row { opacity:.55; }
-  .tracklist li.added .d::after { content:"・追加済み"; color:var(--hl); }
-  body.immersive #paneAdd { display:none !important; }
-  @media (prefers-reduced-motion: reduce){ *{ transition:none !important; animation:none !important; } }
+  .platter-wrap .ripple { width:auto; inset:3%; border-radius:50%; }
+  @media (prefers-reduced-motion: reduce){ *{ transition-duration:.01s !important; animation:none !important; } }
 </style>
 </head>
 <body class="is-paused">
 <div id="bg" aria-hidden="true"><canvas width="64" height="64"></canvas><canvas width="64" height="64"></canvas><div class="shade"></div><div class="flash" id="flash"></div></div>
 <div class="grain" aria-hidden="true"></div>
-<div class="imm-bar">
-  <button class="ghost" id="immSwitch">歌詞を表示</button>
-  <button class="ghost" id="immExit">閉じる（Esc）</button>
-</div>
 
-<div class="app">
-  <header class="topbar">
-    <h1><span class="eq" aria-hidden="true"><i></i><i></i><i></i></span><span id="topLabel">プレイリスト再生</span><span class="top-pl" id="topPl"></span></h1>
-    <div class="tools">
-      <button class="chip hidden" id="listBtn" title="プレイリストを選ぶ (L)">
-        <svg viewBox="0 0 24 24"><path d="M3 6h13v2H3V6zm0 5h13v2H3v-2zm0 5h9v2H3v-2zm15-6v6.2A3 3 0 1 0 20 19V11h3V9h-5v1z"/></svg>プレイリスト
-      </button>
-      <button class="icon-btn hidden" id="menuBtn" aria-label="設定" title="設定">
-        <svg viewBox="0 0 24 24"><path d="M19.4 13a7.5 7.5 0 0 0 0-2l2.1-1.6-2-3.5-2.5 1a7.6 7.6 0 0 0-1.7-1L15 3h-4l-.4 2.7a7.6 7.6 0 0 0-1.7 1l-2.5-1-2 3.5L6.6 11a7.5 7.5 0 0 0 0 2l-2.1 1.6 2 3.5 2.5-1c.5.4 1.1.7 1.7 1L11 21h4l.4-2.7c.6-.3 1.2-.6 1.7-1l2.5 1 2-3.5L19.4 13zM13 15.5a3.5 3.5 0 1 1 0-7 3.5 3.5 0 0 1 0 7z" transform="translate(-1 0)"/></svg>
-      </button>
-    </div>
-  </header>
-
-  <!-- ログイン前 -->
-  <section id="setup">
-    <div class="logo"><svg viewBox="0 0 24 24"><path d="M9 3v12.3A3.5 3.5 0 1 0 11 18.5V7.8l8-1.6v6.1A3.5 3.5 0 1 0 21 15.5V3L9 3z"/></svg></div>
+<!-- ログイン前 -->
+<section class="setup" id="setup">
+  <div class="card">
+    <div class="logo"><svg viewBox="0 0 24 24"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm0 18a8 8 0 1 1 0-16 8 8 0 0 1 0 16zm0-11a3 3 0 1 0 0 6 3 3 0 0 0 0-6zm0 4a1 1 0 1 1 0-2 1 1 0 0 1 0 2z"/></svg></div>
+    <h1>プレイリスト再生</h1>
     <p>Spotifyのアカウントでログインすると、<br>プレイリストをこのページで再生できます。<br>（再生にはSpotify Premiumが必要です）</p>
     <button class="primary" id="loginBtn">Spotifyでログイン</button>
     <details class="fold">
@@ -472,180 +440,194 @@
         <button class="ghost" id="importBtn">取り込む</button>
       </div>
     </details>
+  </div>
+</section>
+
+<!-- ログイン後：部屋 -->
+<div class="room hidden" id="playerArea">
+  <header class="room-top">
+    <div class="brand"><span class="eq" aria-hidden="true"><i></i><i></i><i></i></span><span id="topLabel">プレイリスト再生</span><span class="top-pl" id="topPl"></span></div>
+    <div class="top-tools">
+      <button class="chip" id="listBtn" title="プレイリストと曲一覧 (L)">
+        <svg viewBox="0 0 24 24"><path d="M3 6h13v2H3V6zm0 5h13v2H3v-2zm0 5h9v2H3v-2zm15-6v6.2A3 3 0 1 0 20 19V11h3V9h-5v1z"/></svg>プレイリスト
+      </button>
+      <button class="chip" id="findBtn" title="曲を探して追加 (A)">
+        <svg viewBox="0 0 24 24"><path d="M10 3a7 7 0 0 1 5.6 11.2l5.1 5.1-1.4 1.4-5.1-5.1A7 7 0 1 1 10 3zm0 2a5 5 0 1 0 0 10 5 5 0 0 0 0-10z"/></svg>曲を探して追加
+      </button>
+      <button class="icon-btn" id="menuBtn" aria-label="設定" title="設定">
+        <svg viewBox="0 0 24 24"><path d="M19.4 13a7.5 7.5 0 0 0 0-2l2.1-1.6-2-3.5-2.5 1a7.6 7.6 0 0 0-1.7-1L15 3h-4l-.4 2.7a7.6 7.6 0 0 0-1.7 1l-2.5-1-2 3.5L6.6 11a7.5 7.5 0 0 0 0 2l-2.1 1.6 2 3.5 2.5-1c.5.4 1.1.7 1.7 1L11 21h4l.4-2.7c.6-.3 1.2-.6 1.7-1l2.5 1 2-3.5L19.4 13zM13 15.5a3.5 3.5 0 1 1 0-7 3.5 3.5 0 0 1 0 7z" transform="translate(-1 0)"/></svg>
+      </button>
+    </div>
+  </header>
+
+  <!-- レコード棚：再生中と次にかかる曲 -->
+  <section class="shelf-wrap" aria-label="次にかかるレコード">
+    <div class="shelf-label">NOW PLAYING ／ UP NEXT</div>
+    <div class="shelf" id="shelf"><span class="shelf-empty">プレイリストを再生すると、次にかかるレコードがここに並びます。</span></div>
   </section>
 
-  <!-- ログイン後 -->
-  <section id="playerArea" class="hidden">
-    <div class="content">
-      <div class="left">
-        <div class="stage" id="stage">
-          <div class="glow"></div>
-          <div class="tilt" id="tilt">
-            <div class="cover-wrap paused" id="coverWrap">
-              <img id="cover" alt="アルバムのジャケット画像" crossorigin="anonymous">
+  <div class="main-row">
+    <!-- 左：ターンテーブル（またはジャケット） -->
+    <div class="deck-col">
+      <div class="stage" id="stage">
+        <div class="glow"></div>
+        <div class="tilt" id="tilt">
+          <div class="cover-wrap" id="coverWrap"><img id="cover" alt="アルバムのジャケット画像" crossorigin="anonymous"></div>
+        </div>
+      </div>
+      <!-- レコード表示：ターンテーブル -->
+      <div class="deck" id="deck">
+        <div class="plinth">
+          <div class="platter-wrap" id="platterWrap">
+            <div class="spin" id="spin">
+            <div class="mat"></div>
+            <div class="record">
+              <div class="disc-label"><img id="labelImg" alt=""></div>
+            </div>
+            </div>
+            <div class="sheen"></div>
+            <div class="spindle"></div>
+          </div>
+          <div class="arm-base"></div>
+          <div class="arm-rest"></div>
+          <div class="arm2" id="arm2" aria-hidden="true">
+            <div class="weight"></div><div class="rod"></div><div class="pivot"></div><div class="shell"><span></span></div>
+          </div>
+          <div class="front">
+            <button class="deck-start" id="deckStart" title="再生 / 一時停止 (スペース)">START・STOP</button>
+            <div class="rpm"><span class="led on"></span>33<small>⅓</small><span class="led"></span>45</div>
+            <div class="lcd" aria-hidden="true">
+            <span class="led pw"></span>
+            <div class="scroll"><span id="lcdTitle">NO DISC</span></div>
+            <span class="time" id="lcdTime">0:00</span>
             </div>
           </div>
         </div>
-        <!-- レコード表示：ターンテーブル -->
-        <div class="deck" id="deck">
-          <div class="plinth">
-            <div class="platter-wrap" id="platterWrap">
-              <div class="spin" id="spin">
-                <div class="mat"></div>
-                <div class="record">
-                  <div class="disc-label"><img id="labelImg" alt=""></div>
-                </div>
-              </div>
-              <div class="sheen"></div>
-              <div class="spindle"></div>
-            </div>
-            <div class="arm-base"></div>
-            <div class="arm-rest"></div>
-            <div class="arm2" id="arm2" aria-hidden="true">
-              <div class="weight"></div><div class="rod"></div><div class="pivot"></div><div class="shell"><span></span></div>
-            </div>
-            <div class="front">
-              <button class="deck-start" id="deckStart" title="再生 / 一時停止 (スペース)">START・STOP</button>
-              <div class="rpm"><span class="led on"></span>33<small>⅓</small><span class="led"></span>45</div>
-              <div class="lcd" aria-hidden="true">
-                <span class="led pw"></span>
-                <div class="scroll"><span id="lcdTitle">NO DISC</span></div>
-                <span class="time" id="lcdTime">0:00</span>
-              </div>
-            </div>
-          </div>
-        </div>
-        <div class="meta" id="meta">
+      </div>
+    </div>
+
+    <!-- 右：レシーバー -->
+    <section class="receiver" aria-label="再生の操作と歌詞">
+      <div class="rcv-brand"><span><span class="lamp"></span>STEREO RECEIVER</span><span>LYRICS ・ TUNER</span></div>
+      <div class="rcv-display">
+        <div class="rcv-head" id="meta">
+          <div class="rcv-status mono"><span id="rcvState">STANDBY</span><span id="rcvNo"></span></div>
           <div id="title">プレイリストを選んでください</div>
           <div id="artist">右上の「プレイリスト」から選べます</div>
         </div>
-      </div>
-
-      <div class="right">
-        <div class="panel">
-          <div class="tabs" role="tablist">
-            <button role="tab" id="tabNext" aria-selected="true">次に再生</button>
-            <button role="tab" id="tabLyrics" aria-selected="false">歌詞</button>
-            <button role="tab" id="tabList" aria-selected="false">曲一覧</button>
-            <button role="tab" id="tabAdd" aria-selected="false">曲を追加</button>
-          </div>
-          <div class="pane" id="paneNext"><ol id="nextList" class="tracklist"><li class="empty">再生を始めると、次の曲が表示されます。</li></ol></div>
-          <div class="pane hidden" id="paneList">
-            <div class="pl-tools">
-              <div class="pl-name" id="plName">プレイリスト</div>
-              <div class="pl-row">
-                <input id="plFilter" class="field" placeholder="曲名・歌手名で絞り込み" autocomplete="off" spellcheck="false" aria-label="曲名・歌手名で絞り込み">
-                <span id="plCount"></span>
-              </div>
-            </div>
-            <ol id="plList" class="tracklist"><li class="empty">プレイリストを選ぶと、曲の一覧が表示されます。</li></ol>
-          </div>
-          <div class="pane hidden" id="paneAdd">
-            <div class="add-gate hidden" id="addGate">
-              <p class="note">曲をプレイリストに追加するには、Spotifyでプレイリストを書き換える許可が必要です。一度ログインし直してください（再生中の曲は止まります）。</p>
-              <button class="primary" id="reloginBtn">ログインし直す</button>
-            </div>
-            <div id="addBody">
-              <div class="add-tools">
-                <div class="add-row"><label for="addTarget">追加先</label><select id="addTarget" class="field"></select></div>
-                <div class="add-row">
-                  <form id="addForm" class="add-search"><input id="addQ" class="field" placeholder="曲名・歌手名で検索" autocomplete="off" spellcheck="false" aria-label="曲名・歌手名で検索"><button class="primary sm" type="submit">検索</button></form>
-                  <button class="chip" id="addCurrent" type="button">＋ 再生中の曲</button>
-                </div>
-                <p class="note">曲を押すと追加先のプレイリストに追加され、Spotifyにも反映されます。追加できるのは、自分で作成したか共同編集しているプレイリストだけです。</p>
-              </div>
-              <ol id="addList" class="tracklist"><li class="empty">曲名や歌手名で検索してください。</li></ol>
-              <div style="text-align:center;padding:10px 0 20px"><button class="ghost hidden" id="addMore">さらに表示</button></div>
-            </div>
-          </div>
-          <div class="pane hidden" id="paneLyrics">
-            <div class="lyr-tools" id="lyrTools">
-              <button class="chip sm" id="lyrPick" title="歌詞が見つからない・違う時に、候補から選んだり、検索したり、貼り付けたりできます">歌詞を探す・選ぶ</button>
-              <span class="sp"></span>
-              <span id="lyrOffWrap" class="grp">
-                <span>タイミング</span>
-                <button class="chip sm" id="lyrEarlier" title="歌詞が遅れて表示される時に押す">早める</button>
-                <span id="lyrOff">±0秒</span>
-                <button class="chip sm" id="lyrLater" title="歌詞が先走って表示される時に押す">遅らせる</button>
-              </span>
-            </div>
-            <div class="lyr-cands hidden" id="lyrCands"></div>
-            <div class="lyr-scroll" id="lyrScroll">
-              <div id="lyrics"><div class="msg">再生を始めると、歌詞を探します。</div></div>
-              <div class="note" id="lyricsSrc"></div>
-            </div>
-          </div>
+        <div class="lyr-tools" id="lyrTools">
+          <button class="chip sm" id="lyrPick" title="歌詞が見つからない・違う時に、候補から選んだり、検索したり、貼り付けたりできます">歌詞を探す・選ぶ</button>
+          <span class="sp"></span>
+          <span id="lyrOffWrap" class="grp">
+            <span>タイミング</span>
+            <button class="chip sm" id="lyrEarlier" title="歌詞が遅れて表示される時に押す">早める</button>
+            <span id="lyrOff">±0秒</span>
+            <button class="chip sm" id="lyrLater" title="歌詞が先走って表示される時に押す">遅らせる</button>
+          </span>
+        </div>
+        <div class="lyr-cands hidden" id="lyrCands"></div>
+        <div class="lyr-scroll" id="lyrScroll">
+          <div id="lyrics"><div class="msg">再生を始めると、歌詞を探します。</div></div>
+          <div class="note" id="lyricsSrc"></div>
         </div>
       </div>
-    </div>
 
-    <footer class="bar">
-      <div class="l">
-        <button class="chip" id="copyLinkBtn" title="今の曲のSpotifyリンクをコピー">
-          <svg viewBox="0 0 24 24"><path d="M10.6 13.4a1 1 0 0 1 0-1.4l3.5-3.5a3 3 0 1 1 4.2 4.2l-2 2-1.4-1.4 2-2a1 1 0 1 0-1.4-1.4L12 13.4a1 1 0 0 1-1.4 0zm2.8-2.8a1 1 0 0 1 0 1.4l-3.5 3.5a3 3 0 1 1-4.2-4.2l2-2 1.4 1.4-2 2a1 1 0 1 0 1.4 1.4L12 10.6a1 1 0 0 1 1.4 0z"/></svg>リンクをコピー
+      <div class="dial mono">
+        <span id="posText">0:00</span>
+        <div class="scale"><input type="range" id="seekBar" min="0" max="1000" value="0" aria-label="再生位置" disabled></div>
+        <span id="durText">0:00</span>
+      </div>
+
+      <div class="controls">
+        <button class="hw small" id="shuffleBtn" aria-label="シャッフル" aria-pressed="false" title="シャッフル (S)">
+          <svg viewBox="0 0 24 24"><path d="M17 3l4 4-4 4V8h-2.6l-3.1 4.4L8.5 16H3v-2h4.5l2.9-4-2.9-4H3V4h5.5l3.1 4.4L14.4 6H17V3zm0 10l4 4-4 4v-3h-2.6l-2.2-3.1 1.2-1.7L14.4 15H17v-2z"/></svg>
         </button>
-        <a class="chip" id="openLink" href="#" target="_blank" rel="noopener" aria-disabled="true" title="Spotifyで開く">
-          <svg viewBox="0 0 24 24"><path d="M14 3h7v7h-2V6.4l-9.3 9.3-1.4-1.4L17.6 5H14V3zM5 5h6v2H5v12h12v-6h2v8H3V5h2z"/></svg>Spotifyで開く
-        </a>
+        <button class="hw" id="prevBtn" aria-label="前の曲" title="前へ (P)">
+          <svg viewBox="0 0 24 24"><path d="M6 5h2v14H6V5zm3.5 7L19 5v14l-9.5-7z"/></svg>
+        </button>
+        <button class="hw" id="toggleBtn" aria-label="再生" title="再生/一時停止 (スペース)">
+          <svg id="icoPlay" viewBox="0 0 24 24"><path d="M8 5v14l11-7L8 5z"/></svg>
+          <svg id="icoPause" class="hidden" viewBox="0 0 24 24"><path d="M6 5h4v14H6V5zm8 0h4v14h-4V5z"/></svg>
+        </button>
+        <button class="hw" id="nextBtn" aria-label="次の曲" title="次へ (N)">
+          <svg viewBox="0 0 24 24"><path d="M16 5h2v14h-2V5zM5 19V5l9.5 7L5 19z"/></svg>
+        </button>
+        <button class="hw small badge" id="repeatBtn" aria-label="繰り返し" data-mode="off" title="繰り返し (R)">
+          <svg viewBox="0 0 24 24"><path d="M7 7h10v3l4-4-4-4v3H5v6h2V7zm10 10H7v-3l-4 4 4 4v-3h12v-6h-2v4z"/></svg>
+        </button>
+        <span class="sp"></span>
+        <div class="vol">
+          <div class="knob" id="knob" aria-hidden="true" title="音量（上下にドラッグ、またはホイール。ダブルクリックで消音）"></div>
+          <div class="lbl">VOLUME <button id="muteBtn" title="消音 (M)">MUTE</button></div>
+          <input type="range" id="volBar" class="sr" min="0" max="100" value="80" aria-label="音量">
+        </div>
+      </div>
+
+      <div class="rcv-sub">
         <button class="chip" id="quickAdd" title="再生中の曲をプレイリストに追加"><svg viewBox="0 0 24 24"><path d="M11 5h2v6h6v2h-6v6h-2v-6H5v-2h6z"/></svg>追加</button>
-      </div>
-
-      <div class="c">
-        <div class="controls">
-          <button class="icon-btn small" id="shuffleBtn" aria-label="シャッフル" aria-pressed="false" title="シャッフル (S)">
-            <svg viewBox="0 0 24 24"><path d="M17 3l4 4-4 4V8h-2.6l-3.1 4.4L8.5 16H3v-2h4.5l2.9-4-2.9-4H3V4h5.5l3.1 4.4L14.4 6H17V3zm0 10l4 4-4 4v-3h-2.6l-2.2-3.1 1.2-1.7L14.4 15H17v-2z"/></svg>
-          </button>
-          <button class="icon-btn" id="prevBtn" aria-label="前の曲" title="前へ (P)">
-            <svg viewBox="0 0 24 24"><path d="M6 5h2v14H6V5zm3.5 7L19 5v14l-9.5-7z"/></svg>
-          </button>
-          <button id="toggleBtn" aria-label="再生" title="再生/一時停止 (スペース)">
-            <svg id="icoPlay" viewBox="0 0 24 24"><path d="M8 5v14l11-7L8 5z"/></svg>
-            <svg id="icoPause" class="hidden" viewBox="0 0 24 24"><path d="M6 5h4v14H6V5zm8 0h4v14h-4V5z"/></svg>
-          </button>
-          <button class="icon-btn" id="nextBtn" aria-label="次の曲" title="次へ (N)">
-            <svg viewBox="0 0 24 24"><path d="M16 5h2v14h-2V5zM5 19V5l9.5 7L5 19z"/></svg>
-          </button>
-          <button class="icon-btn small badge" id="repeatBtn" aria-label="繰り返し" data-mode="off" title="繰り返し (R)">
-            <svg viewBox="0 0 24 24"><path d="M7 7h10v3l4-4-4-4v3H5v6h2V7zm10 10H7v-3l-4 4 4 4v-3h12v-6h-2v4z"/></svg>
-          </button>
-        </div>
-        <div class="seek">
-          <span id="posText">0:00</span>
-          <input type="range" id="seekBar" min="0" max="1000" value="0" aria-label="再生位置" disabled>
-          <span id="durText">0:00</span>
-        </div>
-      </div>
-
-      <div class="r">
-        <button class="icon-btn hidden" id="vinylBtn" aria-label="レコード表示の切り替え" aria-pressed="false" title="レコード表示 (V)">
-          <svg viewBox="0 0 24 24"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm0 18a8 8 0 1 1 0-16 8 8 0 0 1 0 16zm0-11a3 3 0 1 0 0 6 3 3 0 0 0 0-6zm0 4a1 1 0 1 1 0-2 1 1 0 0 1 0 2zM12 6a6 6 0 0 0-6 6h1.5A4.5 4.5 0 0 1 12 7.5V6z"/></svg>
+        <button class="chip" id="copyLinkBtn" title="今の曲のSpotifyリンクをコピー" disabled>
+          <svg viewBox="0 0 24 24"><path d="M10.6 13.4a1 1 0 0 1 0-1.4l3.5-3.5a3 3 0 1 1 4.2 4.2l-2 2-1.4-1.4 2-2a1 1 0 1 0-1.4-1.4L12 13.4a1 1 0 0 1-1.4 0zm2.8-2.8a1 1 0 0 1 0 1.4l-3.5 3.5a3 3 0 1 1-4.2-4.2l2-2 1.4 1.4-2 2a1 1 0 1 0 1.4 1.4L12 10.6a1 1 0 0 1 1.4 0z"/></svg>リンク
         </button>
-        <button class="icon-btn hidden" id="immBtn" aria-label="没入表示" title="没入表示 (F)">
-          <svg viewBox="0 0 24 24"><path d="M4 4h6v2H6v4H4V4zm10 0h6v6h-2V6h-4V4zM4 14h2v4h4v2H4v-6zm14 0h2v6h-6v-2h4v-4z"/></svg>
+        <a class="chip" id="openLink" href="#" target="_blank" rel="noopener" aria-disabled="true">
+          <svg viewBox="0 0 24 24"><path d="M14 3h7v7h-2V6.4l-9.3 9.3-1.4-1.4L17.6 5H14V3zM5 5h6v2H5v12h12v-6h2v8H3V5h2z"/></svg>Spotify
+        </a>
+        <span style="flex:1"></span>
+        <button class="chip" id="vinylBtn" aria-pressed="true" title="レコード / ジャケットの切り替え (V)">ジャケット</button>
+        <button class="chip" id="immBtn" title="全画面表示 (F)">
+          <svg viewBox="0 0 24 24"><path d="M4 4h6v2H6v4H4V4zm10 0h6v6h-2V6h-4V4zM4 14h2v4h4v2H4v-6zm14 0h2v6h-6v-2h4v-4z"/></svg>全画面
         </button>
-        <span class="sep"></span>
-        <div class="volume">
-          <button class="icon-btn" id="muteBtn" aria-label="消音の切り替え" title="消音 (M)">
-            <svg viewBox="0 0 24 24" id="icoVol"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3A4.5 4.5 0 0 0 14 8v8a4.5 4.5 0 0 0 2.5-4zM14 3.2v2.1a7 7 0 0 1 0 13.4v2.1a9 9 0 0 0 0-17.6z"/></svg>
-          </button>
-          <input type="range" id="volBar" min="0" max="100" value="80" aria-label="音量">
-        </div>
       </div>
-    </footer>
-  </section>
+    </section>
+  </div>
 </div>
 
-<!-- プレイリスト選択 -->
-<div id="sheet" class="modal hidden" role="dialog" aria-modal="true" aria-label="プレイリストを選ぶ">
-  <div class="card">
-    <h2>プレイリストを選ぶ</h2>
-    <input id="playlist" class="field" placeholder="https://open.spotify.com/playlist/..." autocomplete="off" autocapitalize="off" spellcheck="false" aria-label="プレイリストのURLまたはURI">
-    <div class="history" id="history"></div>
-    <div class="foot">
-      <button class="ghost" id="closeSheet">閉じる</button>
-      <button class="primary" id="startBtn">このページで再生</button>
+<!-- 引き出し：プレイリスト・曲を追加・次に再生 -->
+<div class="scrim" id="scrim"></div>
+<aside class="drawer" id="drawer" aria-label="プレイリストと曲">
+  <div class="tabs" role="tablist">
+    <button role="tab" id="tabList" aria-selected="true">プレイリスト</button>
+    <button role="tab" id="tabAdd" aria-selected="false">曲を探して追加</button>
+    <button role="tab" id="tabNext" aria-selected="false">次に再生</button>
+    <span class="sp"></span>
+    <button class="icon-btn" id="closeDrawer" aria-label="閉じる" title="閉じる (Esc)"><svg viewBox="0 0 24 24"><path d="M6.4 5 12 10.6 17.6 5 19 6.4 13.4 12l5.6 5.6-1.4 1.4-5.6-5.6L6.4 19 5 17.6l5.6-5.6L5 6.4z"/></svg></button>
+  </div>
+
+  <div class="pane" id="paneList">
+    <div class="pane-head">
+      <div class="row2">
+        <input id="playlist" class="field" placeholder="プレイリストのURLを貼り付け" autocomplete="off" autocapitalize="off" spellcheck="false" aria-label="プレイリストのURLまたはURI">
+        <button class="primary sm" id="startBtn">再生</button>
+      </div>
+      <div class="history" id="history" aria-label="最近使ったプレイリスト"></div>
+      <div class="row2"><div class="pl-name" id="plName">プレイリスト未選択</div><span id="plCount"></span></div>
+      <input id="plFilter" class="field" placeholder="曲名・歌手名で絞り込み (/)" autocomplete="off" spellcheck="false" aria-label="曲名・歌手名で絞り込み">
+    </div>
+    <ol id="plList" class="tracklist"></ol>
+  </div>
+
+  <div class="pane hidden" id="paneAdd">
+    <div class="add-gate hidden" id="addGate">
+      <p class="note">曲をプレイリストに追加するには、Spotifyでプレイリストを書き換える許可が必要です。一度ログインし直してください（再生中の曲は止まります）。</p>
+      <button class="primary" id="reloginBtn">ログインし直す</button>
+    </div>
+    <div id="addBody">
+      <div class="pane-head">
+        <div class="row2"><label for="addTarget">追加先</label><select id="addTarget" class="field"></select></div>
+        <form id="addForm" class="row2"><input id="addQ" class="field" placeholder="曲名・歌手名で検索" autocomplete="off" spellcheck="false" aria-label="曲名・歌手名で検索"><button class="primary sm" type="submit">検索</button></form>
+        <div class="row2"><button class="chip" id="addCurrent" type="button">＋ 再生中の曲を追加</button></div>
+        <p class="note">曲を押すと追加先に入り、Spotifyにも反映されます。追加できるのは、自分で作成したか共同編集しているプレイリストだけです。</p>
+      </div>
+      <ol id="addList" class="tracklist"><li class="empty">曲名や歌手名で検索してください。</li></ol>
+      <div style="text-align:center;padding:10px 0 20px"><button class="ghost hidden" id="addMore">さらに表示</button></div>
     </div>
   </div>
+
+  <div class="pane hidden" id="paneNext"><ol id="nextList" class="tracklist"><li class="empty">再生を始めると、次の曲が表示されます。</li></ol></div>
+</aside>
+
+<div class="imm-bar">
+  <button class="ghost" id="immSwitch">歌詞を大きく</button>
+  <button class="ghost" id="immExit">閉じる（Esc）</button>
 </div>
 
 <!-- 設定 -->
@@ -666,10 +648,10 @@
           <dt><kbd>↑</kbd> <kbd>↓</kbd></dt><dd>音量を上げる / 下げる</dd>
           <dt><kbd>N</kbd> <kbd>P</kbd></dt><dd>次の曲 / 前の曲</dd>
           <dt><kbd>S</kbd> <kbd>R</kbd> <kbd>M</kbd></dt><dd>シャッフル / 繰り返し / 消音</dd>
-          <dt><kbd>1</kbd>〜<kbd>4</kbd></dt><dd>次に再生 / 歌詞 / 曲一覧 / 曲を追加</dd>
-          <dt><kbd>L</kbd> <kbd>/</kbd></dt><dd>プレイリストを選ぶ / 曲を絞り込む</dd>
-          <dt><kbd>V</kbd> <kbd>F</kbd></dt><dd>レコード表示 / 没入表示</dd>
-          <dt><kbd>Esc</kbd></dt><dd>小窓や没入表示を閉じる</dd>
+          <dt><kbd>L</kbd> <kbd>A</kbd> <kbd>Q</kbd></dt><dd>プレイリスト / 曲を探して追加 / 次に再生</dd>
+          <dt><kbd>/</kbd></dt><dd>曲を絞り込む</dd>
+          <dt><kbd>V</kbd> <kbd>F</kbd></dt><dd>レコード・ジャケット切り替え / 全画面</dd>
+          <dt><kbd>Esc</kbd></dt><dd>引き出しや小窓、全画面を閉じる</dd>
         </dl>
       </div>
     </details>
@@ -811,9 +793,7 @@ function addHistory(uri){ const h = getHistory(); const old = h.find(x => x.uri 
 function updateHistoryMeta(uri, name, img){ const h = getHistory(); const e = h.find(x => x.uri === uri); if(e){ e.name = name || e.name; e.img = img || e.img; saveHistory(h); } }
 function renderHistory(){
   const box = $("history"); box.textContent = "";
-  const hs = getHistory();
-  if(hs.length){ const lab = document.createElement("div"); lab.className = "hist-label"; lab.textContent = "最近使ったもの"; box.appendChild(lab); }
-  hs.forEach(e => {
+  getHistory().forEach(e => {
     const b = document.createElement("button"); b.title = e.name || e.uri;
     if(e.uri === plUri) b.className = "cur";
     if(e.img){ const im = document.createElement("img"); im.src = e.img; im.alt = ""; b.appendChild(im); } else { const ph = document.createElement("span"); ph.className = "ph"; b.appendChild(ph); }
@@ -875,6 +855,7 @@ function setPausedUI(p){
   $("icoPause").classList.toggle("hidden", p);
   $("toggleBtn").setAttribute("aria-label", p ? "再生" : "一時停止");
   $("topLabel").textContent = curTrack ? (p ? "一時停止中" : "再生中") : "プレイリスト再生";
+  updateStatus();
 }
 function showState(state){
   if(!state) return;
@@ -1013,7 +994,7 @@ async function loadPlaylist(uri){
 function renderPl(){
   const ol = $("plList"); ol.textContent = "";
   const add = (cls, text) => { const li = document.createElement("li"); li.className = cls; li.textContent = text; ol.appendChild(li); };
-  if(plState === "none"){ $("plCount").textContent = ""; add("empty", "右上の「プレイリスト」から選ぶと、曲の一覧が表示されます。"); return; }
+  if(plState === "none"){ $("plCount").textContent = ""; add("empty", "上の欄にプレイリストのURLを貼り付けて「再生」を押すと、曲の一覧が表示されます。"); return; }
   if(plState === "loading"){ $("plCount").textContent = ""; add("empty", "曲の一覧を読み込んでいます…"); return; }
   if(plState === "denied"){
     $("plCount").textContent = "曲の一覧は表示できません";
@@ -1033,7 +1014,7 @@ function renderPl(){
   ol.appendChild(frag);
   if(!shown) add("empty", f ? "一致する曲はありません。" : "曲がありません。");
   $("plCount").textContent = (f ? shown + " / " : "") + total + "曲" + (plState === "more" ? "（読み込み中）" : "");
-  markCurrentInPl();
+  markCurrentInPl(); updateStatus();
 }
 function markCurrentInPl(){
   document.querySelectorAll("#plList li[data-uri]").forEach(li => {
@@ -1063,6 +1044,7 @@ async function loadQueue(){
   renderQueue(sdkNext, "sdk"); queueShown = false;
 }
 function renderQueue(list, src){
+  renderShelf(list);
   const ol = $("nextList"); ol.textContent = "";
   const add = (cls, text) => { const li = document.createElement("li"); li.className = cls; li.textContent = text; ol.appendChild(li); };
   if(curTrack){ add("qhead", "再生中"); ol.appendChild(makeRow(curTrack, -1, true)); }
@@ -1401,7 +1383,7 @@ function syncLyrics(cur){
   if(idx !== lyrActive){
     const prev = lyrItems[lyrActive];
     if(prev && prev.ln) prev.ln.chars.forEach(ch => { ch.el.classList.remove("on", "cur"); ch.st = 0; });
-    lyrItems.forEach(it => it.el.classList.remove("active", "near")); // 移動した直後でも前の強調が残らないよう全体を外す
+    lyrItems.forEach(it => it.el.classList.remove("active", "near"));
     lyrActive = idx;
     const it = lyrItems[idx];
     if(it){
@@ -1674,7 +1656,8 @@ function deckFrame(cur){
 $("deckStart").onclick = () => $("toggleBtn").click();
 function setVinyl(on){
   document.body.classList.toggle("vinyl", on);
-  $("vinylBtn").classList.toggle("on", on); $("vinylBtn").setAttribute("aria-pressed", on);
+  $("vinylBtn").setAttribute("aria-pressed", on);
+  $("vinylBtn").textContent = on ? "ジャケット" : "レコード";
   store.set("vinyl", on ? "1" : "0");
 }
 $("vinylBtn").onclick = () => setVinyl(!document.body.classList.contains("vinyl"));
@@ -1688,22 +1671,55 @@ $("stage").addEventListener("pointermove", e => {
 });
 $("stage").addEventListener("pointerleave", () => { $("tilt").style.transform = ""; });
 
-// ================= 右の欄のタブ（選んだタブは次回も開く） =================
-let curTab = "lyrics";
-function selectTab(name){
-  curTab = name; store.set("tab", name);
-  const tabs = { next:["tabNext","paneNext"], lyrics:["tabLyrics","paneLyrics"], list:["tabList","paneList"], add:["tabAdd","paneAdd"] };
-  Object.entries(tabs).forEach(([k, [tb, pn]]) => { $(pn).classList.toggle("hidden", k !== name); $(tb).setAttribute("aria-selected", k === name); });
-  document.body.classList.toggle("lyrics-view", name === "lyrics");
-  $("immSwitch").textContent = name === "lyrics" ? "ジャケットを表示" : "歌詞を表示";
-  lyrActive = -1; skipPulse = true; // 表示を切り替えたら今の行へ移動し直す
-  if(name === "add") initAdd();
-  if(name === "list") setTimeout(() => document.querySelector("#plList li.current")?.scrollIntoView({ block:"center" }), 30);
+// ================= 引き出し（プレイリスト・曲を探して追加・次に再生） =================
+let drawerTab = "list";
+function openDrawer(name){
+  drawerTab = name || drawerTab;
+  const tabs = { list:["tabList","paneList"], add:["tabAdd","paneAdd"], next:["tabNext","paneNext"] };
+  Object.entries(tabs).forEach(([k, [tb, pn]]) => { $(pn).classList.toggle("hidden", k !== drawerTab); $(tb).setAttribute("aria-selected", k === drawerTab); });
+  document.body.classList.add("drawer-open");
+  if(drawerTab === "add"){ initAdd(); setTimeout(() => $("addQ").focus(), 320); }
+  if(drawerTab === "list") setTimeout(() => document.querySelector("#plList li.current")?.scrollIntoView({ block:"center" }), 340);
 }
-$("tabNext").onclick = () => selectTab("next");
-$("tabLyrics").onclick = () => selectTab("lyrics");
-$("tabList").onclick = () => selectTab("list");
-$("tabAdd").onclick = () => selectTab("add");
+function closeDrawer(){ document.body.classList.remove("drawer-open"); }
+const drawerOpen = () => document.body.classList.contains("drawer-open");
+$("tabList").onclick = () => openDrawer("list");
+$("tabAdd").onclick = () => openDrawer("add");
+$("tabNext").onclick = () => openDrawer("next");
+$("closeDrawer").onclick = closeDrawer;
+$("scrim").onclick = closeDrawer;
+$("listBtn").onclick = () => openDrawer("list");
+$("findBtn").onclick = () => openDrawer("add");
+// 互換：これまでの「タブ選択」は引き出しを開く操作として扱う
+function selectTab(name){ if(name === "add" || name === "list" || name === "next") openDrawer(name); }
+
+// ================= レコード棚（再生中と次にかかる曲。押すとその曲へ） =================
+function renderShelf(list){
+  const box = $("shelf"); box.textContent = "";
+  const mk = (t, tag, cls, onclick) => {
+    const b = document.createElement("button"); b.className = "sleeve" + (cls ? " " + cls : "");
+    b.title = t.name + " — " + artistsOf(t) + (onclick ? "（押すとこの曲へ）" : "");
+    const im = document.createElement("img"); im.alt = ""; im.loading = "lazy";
+    const ims = t.album?.images || []; const u = (ims[1] || ims[0])?.url; if(u) im.src = u;
+    const tg = document.createElement("span"); tg.className = "tag"; tg.textContent = tag;
+    const cap = document.createElement("span"); cap.className = "cap"; cap.textContent = t.name;
+    b.append(im, tg, cap);
+    if(onclick) b.onclick = () => onclick(b); else b.disabled = true;
+    box.appendChild(b); return b;
+  };
+  if(curTrack) mk(curTrack, "NOW", "now");
+  list.forEach((t, i) => mk(t, String(i + 1), "", b => jumpTo(t, i, b)));
+  if(!curTrack && !list.length){ const e = document.createElement("span"); e.className = "shelf-empty"; e.textContent = "プレイリストを再生すると、次にかかるレコードがここに並びます。"; box.appendChild(e); return; }
+  const more = document.createElement("button"); more.className = "shelf-more"; more.textContent = "一覧で見る"; more.onclick = () => openDrawer("next"); box.appendChild(more);
+  box.scrollLeft = 0;
+}
+// 表示窓の状態表示（PLAYING / PAUSED と、プレイリストの何曲目か）
+function updateStatus(){
+  $("rcvState").textContent = !curTrack ? "STANDBY" : paused ? "Ⅱ PAUSED" : "▶ PLAYING";
+  const idx = plUri && plUri === curContext && curTrack ? plItems.findIndex(t => t && t.uri === curTrack.uri) : -1;
+  const total = plItems.filter(Boolean).length;
+  $("rcvNo").textContent = idx >= 0 ? "TRACK " + String(idx + 1).padStart(2, "0") + " / " + String(total).padStart(2, "0") : "";
+}
 
 // ================= 没入表示（操作は数秒で隠れる、画面を消灯させない） =================
 let wakeLock = null, idleTimer;
@@ -1711,6 +1727,7 @@ const isImm = () => document.body.classList.contains("immersive");
 async function setImmersive(on){
   closeSheets();
   document.body.classList.toggle("immersive", on);
+  if(!on){ document.body.classList.remove("lyrics-view"); $("immSwitch").textContent = "歌詞を大きく"; }
   lyrActive = -1; skipPulse = true;
   try {
     if(on && !document.fullscreenElement && document.documentElement.requestFullscreen) await document.documentElement.requestFullscreen();
@@ -1733,7 +1750,12 @@ document.addEventListener("visibilitychange", async () => {
 });
 $("immBtn").onclick = () => setImmersive(true);
 $("immExit").onclick = () => setImmersive(false);
-$("immSwitch").onclick = () => selectTab(curTab === "lyrics" ? "next" : "lyrics");
+$("immSwitch").onclick = () => {
+  const on = !document.body.classList.contains("lyrics-view");
+  document.body.classList.toggle("lyrics-view", on);
+  $("immSwitch").textContent = on ? "レコードを表示" : "歌詞を大きく";
+  lyrActive = -1; skipPulse = true;
+};
 
 // ================= 設定 =================
 function applySettings(){
@@ -1749,13 +1771,11 @@ $("setMotion").onchange = e => { store.set("set:motion", e.target.checked ? "1" 
 document.querySelectorAll("#setSize button").forEach(b => b.onclick = () => { store.set("set:size", b.dataset.v); applySettings(); lyrActive = -1; skipPulse = true; });
 
 // ================= 小窓 =================
-function openSheet(){ $("sheet").classList.remove("hidden"); renderHistory(); setTimeout(() => $("playlist").focus(), 50); }
-function closeSheets(){ $("sheet").classList.add("hidden"); $("menu").classList.add("hidden"); }
-$("listBtn").onclick = openSheet;
+function openSheet(){ openDrawer("list"); setTimeout(() => $("playlist").focus(), 320); }
+function closeSheets(){ closeDrawer(); $("menu").classList.add("hidden"); }
 $("menuBtn").onclick = () => $("menu").classList.remove("hidden");
-$("closeSheet").onclick = closeSheets;
-$("closeMenu").onclick = closeSheets;
-[$("sheet"), $("menu")].forEach(el => el.addEventListener("click", e => { if(e.target === el) closeSheets(); }));
+$("closeMenu").onclick = () => $("menu").classList.add("hidden");
+$("menu").addEventListener("click", e => { if(e.target === $("menu")) $("menu").classList.add("hidden"); });
 
 // ================= 操作 =================
 $("loginBtn").onclick = login;
@@ -1787,6 +1807,9 @@ $("seekBar").addEventListener("change", e => { seekTo(Number(e.target.value) / 1
 let volRaf = 0, lastVol = 80;
 function applyVolume(){
   const v = Number($("volBar").value); setRange($("volBar"));
+  $("knob").style.setProperty("--rot", (-135 + 270 * v / 100) + "deg");
+  $("knob").style.setProperty("--fill", (270 * v / 100) + "deg");
+  $("muteBtn").classList.toggle("muted", v === 0);
   store.set("volume", String(v));
   cancelAnimationFrame(volRaf); volRaf = requestAnimationFrame(() => player && player.setVolume(v / 100));
 }
@@ -1796,7 +1819,16 @@ $("muteBtn").onclick = () => {
   if(Number(bar.value) > 0){ lastVol = Number(bar.value); bar.value = 0; } else bar.value = lastVol || 80;
   applyVolume();
 };
-function stepVolume(d){ $("volBar").value = Math.max(0, Math.min(100, Number($("volBar").value) + d)); applyVolume(); toast("音量 " + $("volBar").value); }
+function stepVolume(d, quiet){ $("volBar").value = Math.max(0, Math.min(100, Number($("volBar").value) + d)); applyVolume(); if(!quiet) toast("音量 " + $("volBar").value); }
+// つまみ：上下にドラッグ、ホイールで回す。ダブルクリックで消音
+(() => {
+  const k = $("knob"); let y0 = 0, v0 = 0, dragging = false;
+  k.addEventListener("pointerdown", e => { dragging = true; y0 = e.clientY; v0 = Number($("volBar").value); k.setPointerCapture(e.pointerId); });
+  k.addEventListener("pointermove", e => { if(!dragging) return; $("volBar").value = Math.max(0, Math.min(100, Math.round(v0 + (y0 - e.clientY) * .6))); applyVolume(); });
+  k.addEventListener("pointerup", () => { dragging = false; });
+  k.addEventListener("wheel", e => { e.preventDefault(); stepVolume(e.deltaY < 0 ? 4 : -4, true); }, { passive:false });
+  k.addEventListener("dblclick", () => $("muteBtn").click());
+})();
 
 // キーボード操作
 document.addEventListener("keydown", e => {
@@ -1804,7 +1836,8 @@ document.addEventListener("keydown", e => {
   const typing = (tag === "input" && e.target.type !== "range" && e.target.type !== "checkbox") || tag === "textarea";
   if(e.key === "Escape"){
     if(typing){ e.target.blur(); }
-    if(!$("sheet").classList.contains("hidden") || !$("menu").classList.contains("hidden")){ closeSheets(); return; }
+    if(!$("menu").classList.contains("hidden")){ $("menu").classList.add("hidden"); return; }
+    if(drawerOpen()){ closeDrawer(); return; }
     if(!$("lyrCands").classList.contains("hidden")){ $("lyrCands").classList.add("hidden"); return; }
     if(isImm()) setImmersive(false);
     return;
@@ -1818,8 +1851,10 @@ document.addEventListener("keydown", e => {
     "arrowup": () => stepVolume(5), "arrowdown": () => stepVolume(-5),
     "n": () => $("nextBtn").click(), "p": () => $("prevBtn").click(),
     "s": () => $("shuffleBtn").click(), "r": () => $("repeatBtn").click(), "m": () => $("muteBtn").click(),
-    "1": () => selectTab("next"), "2": () => selectTab("lyrics"), "3": () => selectTab("list"), "4": () => selectTab("add"),
-    "l": () => openSheet(), "/": () => { selectTab("list"); $("plFilter").focus(); },
+    "l": () => drawerOpen() && drawerTab === "list" ? closeDrawer() : openDrawer("list"),
+    "a": () => drawerOpen() && drawerTab === "add" ? closeDrawer() : openDrawer("add"),
+    "q": () => drawerOpen() && drawerTab === "next" ? closeDrawer() : openDrawer("next"),
+    "/": () => { openDrawer("list"); setTimeout(() => $("plFilter").focus(), 320); },
     "v": () => $("vinylBtn").click(), "f": () => setImmersive(!isImm())
   }[k];
   if(!act) return;
@@ -1866,7 +1901,6 @@ $("logoutBtn").onclick = () => { ["access","refresh","expires","verifier"].forEa
 function showApp(){
   $("setup").classList.add("hidden");
   $("playerArea").classList.remove("hidden");
-  ["listBtn","menuBtn","vinylBtn","immBtn"].forEach(id => $(id).classList.remove("hidden"));
   const last = store.get("lastPlaylist");
   if(last) loadPlaylist(toUri(last) || last); else openSheet();
 }
@@ -1874,8 +1908,8 @@ function showApp(){
   applySettings();
   const v = store.get("volume"); if(v !== null) $("volBar").value = v;
   setRange($("volBar")); setRange($("seekBar"));
-  setVinyl(store.get("vinyl") === "1");
-  selectTab((store.get("tab") === "add" ? "lyrics" : store.get("tab")) || "lyrics");
+  setVinyl((store.get("vinyl") ?? "1") === "1");
+  applyVolume();
   try { await handleRedirect(); } catch(e){ log(e.message); }
   if(store.get("refresh")) showApp();
   log("戻り先URL（開発者画面に登録する値）: " + REDIRECT_URI, true);
