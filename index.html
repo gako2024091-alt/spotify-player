@@ -421,6 +421,20 @@
   .seg button { height:28px; padding:0 14px; border-radius:999px; font-size:13px; color:var(--sub); }
   .seg button[aria-pressed="true"] { background:var(--panel-strong); color:var(--text); font-weight:700; }
 
+
+  /* ===== 曲の追加 ===== */
+  .add-gate { display:flex; flex-direction:column; gap:14px; align-items:flex-start; padding:8px 0; }
+  .add-tools { position:sticky; top:-16px; z-index:2; margin:-16px -24px 10px; padding:12px 24px; display:flex; flex-direction:column; gap:8px; background:#161618; border-bottom:1px solid var(--line); isolation:isolate; }
+  .add-tools, .pl-tools { z-index:5 !important; background:#161618 !important; }
+  .add-row { display:flex; gap:8px; align-items:center; }
+  .add-row label { font-size:12px; color:var(--sub); white-space:nowrap; }
+  .add-search { display:flex; gap:6px; flex:1; }
+  .add-search .field, #addTarget { padding:8px 12px; font-size:13px; }
+  #addTarget { flex:1; appearance:auto; }
+  #addTarget option { background:#1c1c1c; color:var(--text); }
+  .tracklist li.added .row { opacity:.55; }
+  .tracklist li.added .d::after { content:"・追加済み"; color:var(--hl); }
+  body.immersive #paneAdd { display:none !important; }
   @media (prefers-reduced-motion: reduce){ *{ transition:none !important; animation:none !important; } }
 </style>
 </head>
@@ -513,6 +527,7 @@
             <button role="tab" id="tabNext" aria-selected="true">次に再生</button>
             <button role="tab" id="tabLyrics" aria-selected="false">歌詞</button>
             <button role="tab" id="tabList" aria-selected="false">曲一覧</button>
+            <button role="tab" id="tabAdd" aria-selected="false">曲を追加</button>
           </div>
           <div class="pane" id="paneNext"><ol id="nextList" class="tracklist"><li class="empty">再生を始めると、次の曲が表示されます。</li></ol></div>
           <div class="pane hidden" id="paneList">
@@ -524,6 +539,24 @@
               </div>
             </div>
             <ol id="plList" class="tracklist"><li class="empty">プレイリストを選ぶと、曲の一覧が表示されます。</li></ol>
+          </div>
+          <div class="pane hidden" id="paneAdd">
+            <div class="add-gate hidden" id="addGate">
+              <p class="note">曲をプレイリストに追加するには、Spotifyでプレイリストを書き換える許可が必要です。一度ログインし直してください（再生中の曲は止まります）。</p>
+              <button class="primary" id="reloginBtn">ログインし直す</button>
+            </div>
+            <div id="addBody">
+              <div class="add-tools">
+                <div class="add-row"><label for="addTarget">追加先</label><select id="addTarget" class="field"></select></div>
+                <div class="add-row">
+                  <form id="addForm" class="add-search"><input id="addQ" class="field" placeholder="曲名・歌手名で検索" autocomplete="off" spellcheck="false" aria-label="曲名・歌手名で検索"><button class="primary sm" type="submit">検索</button></form>
+                  <button class="chip" id="addCurrent" type="button">＋ 再生中の曲</button>
+                </div>
+                <p class="note">曲を押すと追加先のプレイリストに追加され、Spotifyにも反映されます。追加できるのは、自分で作成したか共同編集しているプレイリストだけです。</p>
+              </div>
+              <ol id="addList" class="tracklist"><li class="empty">曲名や歌手名で検索してください。</li></ol>
+              <div style="text-align:center;padding:10px 0 20px"><button class="ghost hidden" id="addMore">さらに表示</button></div>
+            </div>
           </div>
           <div class="pane hidden" id="paneLyrics">
             <div class="lyr-tools" id="lyrTools">
@@ -554,6 +587,7 @@
         <a class="chip" id="openLink" href="#" target="_blank" rel="noopener" aria-disabled="true" title="Spotifyで開く">
           <svg viewBox="0 0 24 24"><path d="M14 3h7v7h-2V6.4l-9.3 9.3-1.4-1.4L17.6 5H14V3zM5 5h6v2H5v12h12v-6h2v8H3V5h2z"/></svg>Spotifyで開く
         </a>
+        <button class="chip" id="quickAdd" title="再生中の曲をプレイリストに追加"><svg viewBox="0 0 24 24"><path d="M11 5h2v6h6v2h-6v6h-2v-6H5v-2h6z"/></svg>追加</button>
       </div>
 
       <div class="c">
@@ -632,7 +666,7 @@
           <dt><kbd>↑</kbd> <kbd>↓</kbd></dt><dd>音量を上げる / 下げる</dd>
           <dt><kbd>N</kbd> <kbd>P</kbd></dt><dd>次の曲 / 前の曲</dd>
           <dt><kbd>S</kbd> <kbd>R</kbd> <kbd>M</kbd></dt><dd>シャッフル / 繰り返し / 消音</dd>
-          <dt><kbd>1</kbd> <kbd>2</kbd> <kbd>3</kbd></dt><dd>次に再生 / 歌詞 / 曲一覧</dd>
+          <dt><kbd>1</kbd>〜<kbd>4</kbd></dt><dd>次に再生 / 歌詞 / 曲一覧 / 曲を追加</dd>
           <dt><kbd>L</kbd> <kbd>/</kbd></dt><dd>プレイリストを選ぶ / 曲を絞り込む</dd>
           <dt><kbd>V</kbd> <kbd>F</kbd></dt><dd>レコード表示 / 没入表示</dd>
           <dt><kbd>Esc</kbd></dt><dd>小窓や没入表示を閉じる</dd>
@@ -667,7 +701,7 @@
 // ================= 設定 =================
 // 開発者画面の Client ID（秘密情報ではないので公開しても問題ない）
 const CLIENT_ID = "5484c6056ebd41dc8fd68af0e1972e5f";
-const SCOPES = "streaming user-read-email user-read-private user-read-playback-state user-modify-playback-state";
+const SCOPES = "streaming user-read-email user-read-private user-read-playback-state user-modify-playback-state playlist-read-private playlist-read-collaborative playlist-modify-public playlist-modify-private";
 const REDIRECT_URI = location.origin + location.pathname; // 開発者画面にこれと同じ値を登録する
 const $ = id => document.getElementById(id);
 const sleep = ms => new Promise(r => setTimeout(r, ms));
@@ -717,6 +751,7 @@ async function tokenRequest(body){
   if(!res.ok) throw new Error(data.error_description || data.error || "トークン取得に失敗");
   store.set("access", data.access_token);
   if(data.refresh_token) store.set("refresh", data.refresh_token);
+  if(data.scope) store.set("scope", data.scope); // 許可された内容を記録（曲の追加ができるかの判断に使う）
   store.set("expires", String(Date.now() + (data.expires_in - 60) * 1000));
   return data.access_token;
 }
@@ -1510,6 +1545,93 @@ function renderPaste(){
 $("lyrPick").onclick = () => { if(!$("lyrCands").classList.contains("hidden")){ $("lyrCands").classList.add("hidden"); return; } openCands(); };
 
 
+// ================= 曲をプレイリストに追加（Spotify側にも反映） =================
+// 注意：Spotifyの2026年2月の仕様変更により、開発中のアプリで曲を追加できるのは「自分が作成または共同編集しているプレイリスト」だけ
+//       また、検索で一度に取れるのは最大10件
+const WRITE_SCOPES = ["playlist-modify-public", "playlist-modify-private", "playlist-read-private", "playlist-read-collaborative"];
+const hasWriteScope = () => { const s = (store.get("scope") || "").split(" "); return WRITE_SCOPES.every(x => s.includes(x)); };
+let me = null, myPls = [], addTarget = store.get("addTarget") || "", addInited = false, srQuery = "", srOffset = 0, srTotal = 0;
+
+async function initAdd(){
+  // 以前のログインで許可の内容を記録していない場合は、許可証を更新して確かめる
+  if(!store.get("scope")){ try { await getToken(true); } catch(e){} }
+  const ok = hasWriteScope();
+  $("addGate").classList.toggle("hidden", ok);
+  $("addBody").classList.toggle("hidden", !ok);
+  if(!ok || addInited) return;
+  addInited = true;
+  await loadMyPlaylists();
+}
+async function loadMyPlaylists(){
+  const sel = $("addTarget");
+  sel.innerHTML = "<option>読み込み中…</option>";
+  me = me || await spJson("me");
+  const out = []; let url = "me/playlists?limit=50";
+  while(url && out.length < 500){ const d = await spJson(url); if(!d) break; out.push(...(d.items || [])); url = d.next; }
+  myPls = out.filter(p => p && (p.owner?.id === me?.id || p.collaborative));
+  sel.textContent = "";
+  if(!myPls.length){ const o = document.createElement("option"); o.textContent = "追加できるプレイリストがありません"; o.value = ""; sel.appendChild(o); addTarget = ""; return; }
+  myPls.forEach(p => { const o = document.createElement("option"); o.value = p.uri; o.textContent = p.name + (p.collaborative ? "（共同編集）" : ""); sel.appendChild(o); });
+  if(!myPls.some(p => p.uri === addTarget)) addTarget = myPls.some(p => p.uri === plUri) ? plUri : myPls[0].uri;
+  sel.value = addTarget; store.set("addTarget", addTarget);
+  updateQuickAdd();
+}
+$("addTarget").onchange = e => { addTarget = e.target.value; store.set("addTarget", addTarget); updateQuickAdd(); };
+const targetName = () => myPls.find(p => p.uri === addTarget)?.name || "プレイリスト";
+function updateQuickAdd(){ $("quickAdd").title = addTarget ? "再生中の曲を「" + targetName() + "」に追加" : "再生中の曲をプレイリストに追加"; }
+
+async function addTracks(tracks){
+  if(!hasWriteScope()){ selectTab("add"); initAdd(); return false; }
+  if(!addInited) await initAdd();
+  if(!addTarget){ toast("追加先のプレイリストを選んでください"); selectTab("add"); return false; }
+  // 今読み込んでいるプレイリストなら、すでに入っている曲は追加しない
+  let list = tracks.filter(t => t && t.uri && /^spotify:track:/.test(t.uri));
+  if(addTarget === plUri){
+    const have = new Set(plItems.filter(Boolean).map(t => t.uri));
+    const dup = list.filter(t => have.has(t.uri));
+    list = list.filter(t => !have.has(t.uri));
+    if(dup.length && !list.length){ toast("「" + dup[0].name + "」はすでに入っています"); return false; }
+  }
+  if(!list.length){ toast("追加できる曲がありません（ローカルファイルなど）"); return false; }
+  const id = addTarget.split(":")[2];
+  const body = { uris:list.map(t => t.uri) };
+  let r = await sp("playlists/" + id + "/items", { method:"POST", body });
+  if(r && (r.status === 404 || r.status === 405)) r = await sp("playlists/" + id + "/tracks", { method:"POST", body });
+  if(r && r.ok){
+    toast("「" + list[0].name + "」" + (list.length > 1 ? "ほか" + (list.length - 1) + "曲" : "") + "を「" + targetName() + "」に追加しました");
+    if(addTarget === plUri){ const u = plUri; plUri = ""; loadPlaylist(u); } // 曲一覧も更新
+    return true;
+  }
+  log("追加に失敗しました（状態 " + (r ? r.status : "通信できません") + "）" + (r && r.status === 403 ? "。このプレイリストを編集する権限がないか、ログインし直す必要があります" : ""));
+  return false;
+}
+
+// 検索（Spotifyの仕様で一度に10件まで。「さらに表示」で続きを取る）
+async function searchTracks(more){
+  if(!more){ srQuery = $("addQ").value.trim(); srOffset = 0; $("addList").textContent = ""; }
+  if(!srQuery) return;
+  $("addMore").classList.add("hidden");
+  const d = await spJson("search?" + new URLSearchParams({ q:srQuery, type:"track", limit:"10", offset:String(srOffset), market:"from_token" }));
+  const ol = $("addList");
+  const items = d?.tracks?.items || [];
+  srTotal = d?.tracks?.total || 0;
+  if(!items.length && !more){ const li = document.createElement("li"); li.className = "empty"; li.textContent = d ? "見つかりませんでした。" : "検索できませんでした（通信の問題の可能性があります）。"; ol.appendChild(li); return; }
+  const have = addTarget === plUri ? new Set(plItems.filter(Boolean).map(t => t.uri)) : new Set();
+  items.forEach((t, k) => {
+    const li = makeRow(t, srOffset + k, false);
+    const b = li.firstChild; b.title = "「" + t.name + "」を追加";
+    if(have.has(t.uri)) li.classList.add("added");
+    b.onclick = async () => { if(li.classList.contains("added")) { toast("すでに入っています"); return; } b.classList.add("busy"); if(await addTracks([t])) li.classList.add("added"); b.classList.remove("busy"); };
+    ol.appendChild(li);
+  });
+  srOffset += items.length;
+  $("addMore").classList.toggle("hidden", srOffset >= srTotal || !items.length);
+}
+$("addForm").onsubmit = e => { e.preventDefault(); searchTracks(false); };
+$("addMore").onclick = () => searchTracks(true);
+$("addCurrent").onclick = () => curTrack ? addTracks([curTrack]) : toast("再生中の曲がありません");
+$("quickAdd").onclick = () => curTrack ? addTracks([curTrack]) : toast("再生中の曲がありません");
+$("reloginBtn").onclick = login;
 // ================= 毎フレームの更新（変化した所だけ書き換えて軽くする） =================
 let lastSeekV = -1, lastPosTx = "";
 function curPos(){ return paused ? pos : Math.min(dur, pos + (performance.now() - stamp)); }
@@ -1570,16 +1692,18 @@ $("stage").addEventListener("pointerleave", () => { $("tilt").style.transform = 
 let curTab = "lyrics";
 function selectTab(name){
   curTab = name; store.set("tab", name);
-  const tabs = { next:["tabNext","paneNext"], lyrics:["tabLyrics","paneLyrics"], list:["tabList","paneList"] };
+  const tabs = { next:["tabNext","paneNext"], lyrics:["tabLyrics","paneLyrics"], list:["tabList","paneList"], add:["tabAdd","paneAdd"] };
   Object.entries(tabs).forEach(([k, [tb, pn]]) => { $(pn).classList.toggle("hidden", k !== name); $(tb).setAttribute("aria-selected", k === name); });
   document.body.classList.toggle("lyrics-view", name === "lyrics");
   $("immSwitch").textContent = name === "lyrics" ? "ジャケットを表示" : "歌詞を表示";
   lyrActive = -1; skipPulse = true; // 表示を切り替えたら今の行へ移動し直す
+  if(name === "add") initAdd();
   if(name === "list") setTimeout(() => document.querySelector("#plList li.current")?.scrollIntoView({ block:"center" }), 30);
 }
 $("tabNext").onclick = () => selectTab("next");
 $("tabLyrics").onclick = () => selectTab("lyrics");
 $("tabList").onclick = () => selectTab("list");
+$("tabAdd").onclick = () => selectTab("add");
 
 // ================= 没入表示（操作は数秒で隠れる、画面を消灯させない） =================
 let wakeLock = null, idleTimer;
@@ -1694,7 +1818,7 @@ document.addEventListener("keydown", e => {
     "arrowup": () => stepVolume(5), "arrowdown": () => stepVolume(-5),
     "n": () => $("nextBtn").click(), "p": () => $("prevBtn").click(),
     "s": () => $("shuffleBtn").click(), "r": () => $("repeatBtn").click(), "m": () => $("muteBtn").click(),
-    "1": () => selectTab("next"), "2": () => selectTab("lyrics"), "3": () => selectTab("list"),
+    "1": () => selectTab("next"), "2": () => selectTab("lyrics"), "3": () => selectTab("list"), "4": () => selectTab("add"),
     "l": () => openSheet(), "/": () => { selectTab("list"); $("plFilter").focus(); },
     "v": () => $("vinylBtn").click(), "f": () => setImmersive(!isImm())
   }[k];
@@ -1751,7 +1875,7 @@ function showApp(){
   const v = store.get("volume"); if(v !== null) $("volBar").value = v;
   setRange($("volBar")); setRange($("seekBar"));
   setVinyl(store.get("vinyl") === "1");
-  selectTab(store.get("tab") || "lyrics");
+  selectTab((store.get("tab") === "add" ? "lyrics" : store.get("tab")) || "lyrics");
   try { await handleRedirect(); } catch(e){ log(e.message); }
   if(store.get("refresh")) showApp();
   log("戻り先URL（開発者画面に登録する値）: " + REDIRECT_URI, true);
