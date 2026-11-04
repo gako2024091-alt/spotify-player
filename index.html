@@ -482,6 +482,197 @@
   .imm-bar { top:auto; bottom:22px; left:24px; right:auto; }
   .bb-body { grid-template-columns:minmax(0,1fr) minmax(520px,2.3fr) minmax(0,1fr); }
   .deck-win { height:clamp(112px, 17vh, 150px); }
+  /* ==================== 古びたラジカセ ==================== */
+  :root { --cream-1:#e9dfc6; --cream-2:#d3c6a3; --cream-3:#a8997a; --ink:#2b261d; --worn:#6b604c; }
+  body { --hl:#f0a24a; }
+  #bg .shade { background:radial-gradient(110% 85% at 50% 45%, rgba(40,28,16,.35), rgba(14,10,6,.9)); }
+  body { background:#140f0a; }
+
+  /* 本体：黄ばんだ樹脂、擦り傷、手垢 */
+  .boombox { color:var(--ink);
+    background:
+      radial-gradient(40% 30% at 18% 22%, rgba(120,90,40,.16), transparent 70%),
+      radial-gradient(30% 25% at 82% 78%, rgba(110,80,40,.14), transparent 70%),
+      radial-gradient(22% 18% at 60% 12%, rgba(90,70,40,.10), transparent 70%),
+      linear-gradient(180deg, #efe6cf 0%, var(--cream-1) 35%, var(--cream-2) 100%);
+    box-shadow:0 50px 90px rgba(0,0,0,.7), inset 0 2px 0 rgba(255,250,235,.7), inset 0 -5px 0 rgba(60,45,20,.35), inset 0 0 40px rgba(90,70,30,.25), 0 0 0 1px rgba(40,30,15,.6); }
+  .boombox::before { opacity:1; mix-blend-mode:multiply;
+    background:
+      url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='300' height='300'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.75' numOctaves='3' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 .45  0 0 0 0 .38  0 0 0 0 .28  0 0 0 .55 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>"),
+      repeating-linear-gradient(118deg, transparent 0 140px, rgba(80,60,30,.10) 140px 141px, transparent 141px 260px),
+      repeating-linear-gradient(32deg, transparent 0 210px, rgba(80,60,30,.08) 210px 211px, transparent 211px 400px); }
+  /* 角の擦り減り */
+  .boombox::after { content:""; position:absolute; inset:0; border-radius:inherit; pointer-events:none;
+    box-shadow:inset 0 0 0 3px rgba(255,250,235,.25), inset 0 0 18px 4px rgba(70,50,20,.25); }
+  .handle { border-color:#2a2620; box-shadow:inset 0 2px 0 rgba(255,255,255,.06), 0 -2px 10px rgba(0,0,0,.5); filter:saturate(.7); }
+  .bb-logo { color:#5a4f3c; } .bb-logo small { color:#7d715a; }
+  .bb-logo { opacity:.85; }
+
+  /* キー：くすんだ象牙色、文字は擦れて薄い */
+  .keys-row { background:#2a251d; box-shadow:inset 0 2px 6px rgba(0,0,0,.75), 0 1px 0 rgba(255,250,235,.5); }
+  .key { color:#3a3226; background:linear-gradient(180deg,#f1e8d2 0%,#d9cdaf 70%,#bdb091 100%); box-shadow:0 6px 0 #7c6f55, 0 8px 10px rgba(0,0,0,.5), inset 0 1px 0 #fffaf0; }
+  .key small { color:#5b5040; opacity:.85; }
+  .key:active, .key.down { box-shadow:0 1px 0 #7c6f55, 0 2px 4px rgba(0,0,0,.5), inset 0 1px 0 #fffaf0; }
+  body:not(.is-paused) .key.play { box-shadow:0 1px 0 #7c6f55, 0 2px 4px rgba(0,0,0,.5), inset 0 1px 0 #fffaf0, 0 0 0 2px var(--hl); }
+  .key:focus-visible { outline:3px solid var(--hl); outline-offset:3px; }
+  /* ショートカットの刻印 */
+  .key[data-k]::after { content:attr(data-k); position:absolute; top:4px; right:6px; font-size:9px; font-weight:800; color:#8a7c62; opacity:.8; font-family:ui-monospace,Menlo,monospace; }
+
+  /* スピーカー：ほこりっぽい網 */
+  .speaker { background:#1a1713; box-shadow:inset 0 0 0 3px #3a3226, inset 0 6px 18px rgba(0,0,0,.85), 0 1px 0 rgba(255,250,235,.5); }
+  .speaker::before { content:""; position:absolute; inset:0; z-index:1; pointer-events:none;
+    background:radial-gradient(35% 20% at 30% 85%, rgba(200,180,140,.10), transparent 70%), radial-gradient(25% 15% at 75% 15%, rgba(200,180,140,.08), transparent 70%); }
+
+  /* カセット窓・液晶：黄ばみ、かすかなちらつき */
+  .deck-win { height:clamp(96px, 14vh, 126px) !important; background:linear-gradient(180deg,#2c2720,#1b1813); box-shadow:inset 0 0 0 2px #0f0d0a, inset 0 4px 14px rgba(0,0,0,.8), 0 1px 0 rgba(255,250,235,.5); }
+  .cs-label { background:linear-gradient(90deg, #efe2c0, #e1cfa4); box-shadow:inset 0 -3px 0 #b5653a; }
+  .cs-label::after { content:""; position:absolute; inset:0; pointer-events:none; background:radial-gradient(30% 80% at 75% 40%, rgba(150,110,50,.18), transparent 70%); }
+  .cs-title { font-family:"Hiragino Maru Gothic ProN","Klee","Yu Gothic UI",sans-serif; color:#3a2a1a; }
+  .counter { color:#ffcf8a; background:#0d0905; }
+  .rcv-display { background:radial-gradient(120% 90% at 50% 0%, #1e1913, #0c0907); box-shadow:inset 0 0 0 2px #0f0d0a, inset 0 4px 18px rgba(0,0,0,.9), 0 1px 0 rgba(255,250,235,.5); }
+  .rcv-display::before { content:""; position:absolute; inset:0; pointer-events:none; z-index:2;
+    background:repeating-linear-gradient(180deg, rgba(255,255,255,.025) 0 1px, transparent 1px 3px); }
+  body:not(.still) .rcv-display, body:not(.still) .counter { animation:flicker 7s steps(1) infinite; }
+  @keyframes flicker { 0%,100% { filter:none; } 46% { filter:brightness(.93); } 47% { filter:none; } 81% { filter:brightness(.96); } 82% { filter:none; } }
+
+  /* 歌詞の欄を広く・道具は控えめに */
+  .rcv-head { padding:8px 16px 6px; }
+  #title { font-size:18px; }
+  .lyr-tools { padding:4px 10px; gap:4px; }
+  .lyr-tools .chip.sm { height:24px; font-size:11px; padding:0 9px; background:rgba(255,255,255,.06); }
+  #lyrOff { min-width:80px; font-size:11px; }
+  #lyrics .ln.active { color:#fff5e0; }
+
+  /* 目盛り：触れた位置の時刻を表示 */
+  .dial { color:#4a4030; }
+  .dial span { color:#3a3226; }
+  .dial .scale { cursor:pointer; }
+  .dial-tip { position:absolute; bottom:calc(100% + 6px); transform:translateX(-50%); padding:3px 7px; border-radius:5px; font-size:11px; background:#1b1612; color:#ffcf8a; pointer-events:none; opacity:0; transition:opacity .12s; white-space:nowrap; }
+  .scale:hover .dial-tip { opacity:1; }
+
+  /* 下段 */
+  .slide { color:#4a4030; }
+  .slide .sl { background:#2a251d; }
+  .slide .sl i { background:linear-gradient(#f1e8d2,#bdb091); }
+  .bb-chips .chip { background:rgba(60,45,20,.12); color:#3a3226; box-shadow:inset 0 1px 2px rgba(60,45,20,.25), 0 1px 0 rgba(255,250,235,.6); }
+  .bb-chips .chip:hover { background:rgba(60,45,20,.22); }
+  .knob { background:radial-gradient(circle at 38% 30%, #f6eedb, #c9bc9b 62%, #8d7f62); box-shadow:0 5px 10px rgba(0,0,0,.45), inset 0 1px 0 #fffaf0, 0 0 0 3px #4a4030; }
+  .vol .lbl { color:#4a4030; }
+  #volVal { font-family:ui-monospace,Menlo,monospace; font-size:13px; font-weight:800; color:#3a3226; letter-spacing:0; }
+
+  /* 棚：少し日焼けした木 */
+  .shelf-wrap::after { background:linear-gradient(#5e4127,#3d2a18 55%,#26190d); }
+  .sleeve { filter:saturate(.85) sepia(.12); }
+  .sleeve.now { filter:none; }
+
+  /* はじめての時の案内 */
+  .cta { margin-top:14px; display:flex; gap:8px; flex-wrap:wrap; }
+  #lyrics.welcome { padding:28px 0 20px; }
+  #lyrics.welcome .msg { font-size:15px; }
+  /* ==================== 操作性を優先した配置 ==================== */
+  .room { grid-template-rows:48px minmax(0,1fr) !important; }
+  .layout { display:grid; grid-template-columns:360px minmax(0,1fr); gap:20px; padding:0 20px 18px; min-height:0; }
+  @media (max-width:1240px){ .layout { grid-template-columns:300px minmax(0,1fr); } }
+
+  /* 左：曲一覧（常に表示） */
+  .drawer.side { position:relative !important; inset:auto !important; transform:none !important; width:auto !important; z-index:1; border-radius:16px; border:1px solid rgba(255,240,210,.08);
+    background:rgba(24,19,14,.86); box-shadow:0 20px 50px rgba(0,0,0,.5); min-height:0; overflow:hidden; }
+  .drawer.side #closeDrawer { display:none; }
+  .drawer.side .tabs { padding:10px 10px 8px; gap:2px; }
+  .drawer.side .tabs [role=tab] { height:34px; padding:0 13px; font-size:13px; }
+  .drawer.side .pane-head { background:#1a1510; }
+  .tracklist .row { padding:6px 8px; }
+  .tracklist img { width:40px; height:40px; }
+  .tracklist .n { font-size:13.5px; }
+  .tracklist li.current .row { background:color-mix(in srgb, var(--hl) 20%, transparent); box-shadow:inset 3px 0 0 var(--hl); }
+  .scrim { display:none !important; }
+
+  /* 右：ラジカセ */
+  .boombox-area { padding:30px 0 0 !important; align-items:stretch !important; min-height:0; }
+  .boombox { width:100% !important; max-height:none !important; height:100%; display:flex; flex-direction:column; gap:12px; padding:14px 20px 16px; }
+  .handle { left:22%; right:22%; }
+  .bb-head { display:flex; align-items:center; gap:20px; }
+  .bb-logo { flex:none; }
+  .bb-head .deck-win { flex:1; height:96px !important; max-width:620px; margin-left:auto; padding:8px 12px; }
+  .bb-head .cs-label { min-height:24px; }
+
+  .bb-mid { flex:1; min-height:0; display:grid; grid-template-columns:92px minmax(0,1fr) 92px; gap:14px; }
+  .bb-mid .speaker { border-radius:14px; }
+  .bb-mid .cone { width:84%; }
+  #lyrics { padding:16vh 0 30vh; }
+  #title { font-size:20px; }
+
+  /* 再生位置：太い帯。触れた位置が広く反応する */
+  .seekrow { display:flex; align-items:center; gap:12px; padding:0 4px; font-size:13px; font-weight:700; color:#3a3226; }
+  .seekrow span { width:46px; flex:none; } .seekrow span:first-child { text-align:right; }
+  .seekrow .scale { position:relative; flex:1; height:22px; border-radius:11px; background:#2a251d; box-shadow:inset 0 2px 5px rgba(0,0,0,.7), 0 1px 0 rgba(255,250,235,.6); cursor:pointer; }
+  #seekBar { position:absolute; inset:-8px 0; height:38px; width:100%; }
+  #seekBar::-webkit-slider-runnable-track { height:38px; background:linear-gradient(to right, transparent 0 0) ; }
+  #seekBar::-moz-range-track { height:22px; background:transparent; }
+  .seekrow .scale::before { content:""; position:absolute; left:3px; top:3px; bottom:3px; width:calc((100% - 6px) * var(--sp, 0)); border-radius:8px;
+    background:linear-gradient(90deg, #c4703a, var(--hl)); box-shadow:0 0 10px color-mix(in srgb, var(--hl) 45%, transparent); pointer-events:none; }
+  #seekBar::-webkit-slider-thumb { -webkit-appearance:none; width:22px; height:22px; margin-top:8px; border-radius:50%; background:radial-gradient(circle at 40% 35%, #fff8ea, #d9cdaf); box-shadow:0 2px 6px rgba(0,0,0,.5), 0 0 0 2px #6b5a3e; }
+  #seekBar::-moz-range-thumb { width:22px; height:22px; border-radius:50%; border:none; background:#efe6cf; box-shadow:0 2px 6px rgba(0,0,0,.5), 0 0 0 2px #6b5a3e; }
+  #seekBar::-moz-range-progress { background:transparent; }
+  #seekBar:disabled::-webkit-slider-thumb { visibility:hidden; }
+
+  /* 操作の段 */
+  .transport { display:grid; grid-template-columns:1fr auto 1fr; align-items:center; gap:16px; padding:4px 2px 0; }
+  .tr-left { display:flex; gap:6px; }
+  .tr-center { display:flex; align-items:center; gap:10px; padding:8px 12px; border-radius:14px; background:#2a251d; box-shadow:inset 0 2px 6px rgba(0,0,0,.75), 0 1px 0 rgba(255,250,235,.5); }
+  .tr-right { display:flex !important; flex-direction:row !important; align-items:center; justify-content:flex-end; gap:8px; }
+  .transport .key { width:74px; height:60px; }
+  .transport .key svg { width:26px; height:26px; }
+  .transport .key.play { width:108px; height:66px; }
+  .transport .key.play svg { width:32px; height:32px; }
+  /* トグル（シャッフル・繰り返し）：オンで点灯し文字でも状態がわかる */
+  .tog { display:flex; flex-direction:column; align-items:center; gap:3px; width:76px; height:56px; justify-content:center; border-radius:10px; color:#b9ad92; font-size:10px; font-weight:800; transition:background .15s, color .15s; }
+  .tog svg { width:22px; height:22px; }
+  .tog:hover { background:rgba(255,240,210,.06); color:#efe6cf; }
+  .tog.on { color:var(--hl); background:rgba(240,162,74,.12); box-shadow:inset 0 0 0 1px rgba(240,162,74,.4); }
+  .tog.badge::after, .tog.badge::before { content:none !important; }
+  /* 小さな操作ボタン */
+  .tbtn { display:flex; align-items:center; gap:6px; height:40px; padding:0 13px; border-radius:10px; color:#3a3226; font-size:13px; font-weight:700; text-decoration:none;
+    background:linear-gradient(#f3ead6,#d9cdaf); box-shadow:0 3px 0 #8a7c60, 0 4px 8px rgba(0,0,0,.25), inset 0 1px 0 #fffaf0; transition:transform .07s, box-shadow .07s; }
+  .tbtn svg { width:18px; height:18px; }
+  .tbtn:active { transform:translateY(2px); box-shadow:0 1px 0 #8a7c60, inset 0 1px 0 #fffaf0; }
+  .tbtn[aria-disabled="true"], .tbtn:disabled { opacity:.45; pointer-events:none; }
+  .tbtn.icon { padding:0 10px; }
+  .tbtn.muted { color:#b8231a; }
+  /* 音量：普通のスライダー */
+  #volBar { width:130px; height:24px; position:static !important; clip:auto !important; overflow:visible !important; }
+  #volBar::-webkit-slider-runnable-track { height:8px; border-radius:4px; background:linear-gradient(to right, var(--hl) var(--p), #2a251d var(--p)); box-shadow:inset 0 1px 3px rgba(0,0,0,.6); }
+  #volBar::-moz-range-track { height:8px; border-radius:4px; background:#2a251d; }
+  #volBar::-moz-range-progress { height:8px; border-radius:4px; background:var(--hl); }
+  #volBar::-webkit-slider-thumb { -webkit-appearance:none; width:18px; height:18px; margin-top:-5px; border-radius:50%; opacity:1; background:radial-gradient(circle at 40% 35%, #fff8ea, #d9cdaf); box-shadow:0 2px 5px rgba(0,0,0,.5), 0 0 0 2px #6b5a3e; }
+  #volBar::-moz-range-thumb { width:18px; height:18px; border:none; border-radius:50%; opacity:1; background:#efe6cf; box-shadow:0 0 0 2px #6b5a3e; }
+  .tr-right .lbl { min-width:26px; }
+  #volVal { font-size:13px; }
+
+  /* 全画面：左の欄を隠し、ラジカセを大きく */
+  body.immersive .layout { grid-template-columns:minmax(0,1fr); }
+  body.immersive .drawer.side { display:none; }
+  body.immersive.lyrics-view .bb-head, body.immersive.lyrics-view .speaker { display:none; }
+  body.immersive.lyrics-view .bb-mid { grid-template-columns:1fr; }
+  body.immersive.idle .transport, body.immersive.idle .seekrow { opacity:.15; transition:opacity .6s; }
+  .imm-bar { bottom:auto !important; top:14px !important; left:auto !important; right:20px !important; }
+
+  @media (max-width:1100px){
+    .room { position:static !important; display:block !important; }
+    .layout { grid-template-columns:1fr; }
+    .drawer.side { height:420px; }
+    .bb-mid { grid-template-columns:1fr; } .bb-mid .speaker { display:none; }
+    .transport { grid-template-columns:1fr; justify-items:center; }
+  }
+  .tbtn { white-space:nowrap; flex:none; }
+  .transport { grid-template-columns:minmax(0,1fr) auto minmax(0,1fr); }
+  .tr-left, .tr-right { min-width:0; }
+  @media (max-width:1560px){ .tbtn span { display:none; } .tbtn { padding:0 11px; } #volBar { width:110px; } }
+  /* 曲一覧を右側へ */
+  .layout { grid-template-columns:minmax(0,1fr) 360px; }
+  .drawer.side { order:2; }
+  .boombox-area { order:1; }
+  @media (max-width:1240px){ .layout { grid-template-columns:minmax(0,1fr) 300px; } }
   /* ==== レコード表示：ターンテーブル（寸法はすべて本体の幅に対する割合 cqw で指定） ==== */
   .deck { display:none; width:var(--deckW); }
   body.vinyl .stage { display:none; }
@@ -598,129 +789,20 @@
   <header class="room-top">
     <div class="brand"><span class="eq" aria-hidden="true"><i></i><i></i><i></i></span><span id="topLabel">プレイリスト再生</span><span class="top-pl" id="topPl"></span></div>
     <div class="top-tools">
-      <button class="chip sm" id="listBtn" title="プレイリストと曲一覧 (L)">プレイリスト</button>
-      <button class="chip sm" id="findBtn" title="曲を探して追加 (A)">曲を探して追加</button>
+      <button class="chip sm" id="findBtn" title="曲を探して追加 (A)">＋ 曲を探して追加</button>
+      <button class="chip sm" id="helpBtn" title="キーボード操作の一覧 (?)">操作の一覧</button>
       <button class="icon-btn" id="menuBtn" aria-label="設定" title="設定">
         <svg viewBox="0 0 24 24"><path d="M19.4 13a7.5 7.5 0 0 0 0-2l2.1-1.6-2-3.5-2.5 1a7.6 7.6 0 0 0-1.7-1L15 3h-4l-.4 2.7a7.6 7.6 0 0 0-1.7 1l-2.5-1-2 3.5L6.6 11a7.5 7.5 0 0 0 0 2l-2.1 1.6 2 3.5 2.5-1c.5.4 1.1.7 1.7 1L11 21h4l.4-2.7c.6-.3 1.2-.6 1.7-1l2.5 1 2-3.5L19.4 13zM13 15.5a3.5 3.5 0 1 1 0-7 3.5 3.5 0 0 1 0 7z" transform="translate(-1 0)"/></svg>
       </button>
     </div>
   </header>
 
-  <!-- 次にかかる曲（カセットラック） -->
-  <section class="shelf-wrap" aria-label="次にかかる曲">
-    <div class="shelf-label">UP NEXT</div>
-    <div class="shelf" id="shelf"><span class="shelf-empty">プレイリストを再生すると、次にかかる曲がここに並びます。</span></div>
-  </section>
-
-  <!-- ラジカセ本体 -->
-  <div class="boombox-area">
-    <div class="boombox">
-      <div class="handle" aria-hidden="true"></div>
-      <div class="bb-top">
-        <div class="bb-logo"><span class="lamp"></span>STEREO RADIO CASSETTE<small>LYRICS DISPLAY ・ AUTO REVERSE</small></div>
-        <!-- ピアノ式キー -->
-        <div class="keys-row" role="group" aria-label="再生の操作">
-          <button class="key rec" id="quickAdd" title="録音＝再生中の曲をプレイリストに追加"><i class="dot"></i><b>REC</b><small>追加</small></button>
-          <button class="key" id="prevBtn" aria-label="前の曲" title="巻き戻し＝前の曲 (P)"><svg viewBox="0 0 24 24"><path d="M11 6v12L2.5 12 11 6zm1 6 8.5-6v12L12 12z"/></svg><small>前へ</small></button>
-          <button class="key play" id="toggleBtn" aria-label="再生" title="再生/一時停止 (スペース)">
-            <svg id="icoPlay" viewBox="0 0 24 24"><path d="M8 5v14l11-7L8 5z"/></svg>
-            <svg id="icoPause" class="hidden" viewBox="0 0 24 24"><path d="M6 5h4v14H6V5zm8 0h4v14h-4V5z"/></svg>
-            <small>再生</small>
-          </button>
-          <button class="key" id="nextBtn" aria-label="次の曲" title="早送り＝次の曲 (N)"><svg viewBox="0 0 24 24"><path d="M13 6v12l8.5-6L13 6zm-1 6L3.5 6v12L12 12z"/></svg><small>次へ</small></button>
-          <button class="key" id="stopBtn" aria-label="停止" title="停止"><svg viewBox="0 0 24 24"><path d="M6 6h12v12H6z"/></svg><small>停止</small></button>
-          <button class="key" id="ejectBtn" aria-label="取り出し" title="取り出し＝プレイリストを選ぶ (L)"><svg viewBox="0 0 24 24"><path d="M12 5l7 8H5l7-8zM5 16h14v3H5z"/></svg><small>選曲</small></button>
-        </div>
-      </div>
-
-      <div class="bb-body">
-        <!-- 左スピーカー -->
-        <div class="speaker" id="spkL"><div class="cone"><i></i></div></div>
-
-        <!-- 中央：カセット窓・表示・目盛り -->
-        <div class="bb-center">
-          <div class="deck-win" id="deckWin">
-            <div class="cassette" id="tilt">
-              <div class="cs-label">
-                <div class="cs-side">A</div>
-                <div class="cs-title"><span id="lcdTitle">NO TAPE</span></div>
-                <img id="cover" alt="アルバムのジャケット画像" crossorigin="anonymous">
-              </div>
-              <div class="cs-window">
-                <div class="reel l" id="reelL"><div class="tape"></div><div class="hub" id="hubL"></div></div>
-                <div class="tape-run"></div>
-                <div class="reel r" id="reelR"><div class="tape"></div><div class="hub" id="hubR"></div></div>
-              </div>
-            </div>
-            <div class="counter mono" title="再生時間"><span id="lcdTime">0:00</span></div>
-          </div>
-
-          <div class="rcv-display">
-            <div class="rcv-head" id="meta">
-              <div class="rcv-status mono"><span id="rcvState">STANDBY</span><span id="rcvNo"></span></div>
-              <div id="title">プレイリストを選んでください</div>
-              <div id="artist">「選曲」キーか、右上の「プレイリスト」から選べます</div>
-            </div>
-            <div class="lyr-tools" id="lyrTools">
-              <button class="chip sm" id="lyrPick" title="歌詞が見つからない・違う時に、候補から選んだり、検索したり、貼り付けたりできます">歌詞を探す・選ぶ</button>
-              <span class="sp"></span>
-              <span id="lyrOffWrap" class="grp">
-                <button class="chip sm" id="lyrEarlier" title="歌詞が遅れて表示される時に押す">早める</button>
-                <span id="lyrOff">±0秒</span>
-                <button class="chip sm" id="lyrLater" title="歌詞が先走って表示される時に押す">遅らせる</button>
-              </span>
-            </div>
-            <div class="lyr-cands hidden" id="lyrCands"></div>
-            <div class="lyr-scroll" id="lyrScroll">
-              <div id="lyrics"><div class="msg">再生を始めると、歌詞を探します。</div></div>
-              <div class="note" id="lyricsSrc"></div>
-            </div>
-          </div>
-
-          <div class="dial mono">
-            <span id="posText">0:00</span>
-            <div class="scale"><input type="range" id="seekBar" min="0" max="1000" value="0" aria-label="再生位置" disabled></div>
-            <span id="durText">0:00</span>
-          </div>
-        </div>
-
-        <!-- 右スピーカー -->
-        <div class="speaker" id="spkR"><div class="cone"><i></i></div></div>
-      </div>
-
-      <div class="bb-bottom">
-        <div class="switches">
-          <button class="slide" id="shuffleBtn" aria-pressed="false" title="シャッフル (S)"><span class="sl"><i></i></span>SHUFFLE</button>
-          <button class="slide badge" id="repeatBtn" data-mode="off" title="繰り返し (R)：押すたびに オフ→全曲→1曲"><span class="sl"><i></i></span>REPEAT</button>
-        </div>
-        <div class="bb-chips">
-          <button class="chip sm" id="copyLinkBtn" title="今の曲のSpotifyリンクをコピー" disabled>リンク</button>
-          <a class="chip sm" id="openLink" href="#" target="_blank" rel="noopener" aria-disabled="true">Spotifyで開く</a>
-          <button class="chip sm" id="immBtn" title="全画面表示 (F)">全画面</button>
-        </div>
-        <div class="vol">
-          <div class="knob" id="knob" aria-hidden="true" title="音量（上下にドラッグ、またはホイール。ダブルクリックで消音）"></div>
-          <div class="lbl">VOLUME <button id="muteBtn" title="消音 (M)">MUTE</button></div>
-          <input type="range" id="volBar" class="sr" min="0" max="100" value="80" aria-label="音量">
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- 以前の表示部品との互換用（画面には出さない） -->
-  <div class="hidden" aria-hidden="true">
-    <div id="stage"></div><div id="coverWrap"></div><img id="labelImg" alt=""><div id="spin"></div><div id="arm2"></div>
-    <button id="deckStart"></button><div id="platterWrap"></div><button id="vinylBtn"></button>
-  </div>
-</div>
-
-<!-- 引き出し：プレイリスト・曲を追加・次に再生 -->
-<div class="scrim" id="scrim"></div>
-<aside class="drawer" id="drawer" aria-label="プレイリストと曲">
+  <div class="layout">
+<aside class="drawer side" id="drawer" aria-label="プレイリストと曲">
   <div class="tabs" role="tablist">
-    <button role="tab" id="tabList" aria-selected="true">プレイリスト</button>
-    <button role="tab" id="tabAdd" aria-selected="false">曲を探して追加</button>
+    <button role="tab" id="tabList" aria-selected="true">曲一覧</button>
     <button role="tab" id="tabNext" aria-selected="false">次に再生</button>
+    <button role="tab" id="tabAdd" aria-selected="false">探して追加</button>
     <span class="sp"></span>
     <button class="icon-btn" id="closeDrawer" aria-label="閉じる" title="閉じる (Esc)"><svg viewBox="0 0 24 24"><path d="M6.4 5 12 10.6 17.6 5 19 6.4 13.4 12l5.6 5.6-1.4 1.4-5.6-5.6L6.4 19 5 17.6l5.6-5.6L5 6.4z"/></svg></button>
   </div>
@@ -757,6 +839,100 @@
 
   <div class="pane hidden" id="paneNext"><ol id="nextList" class="tracklist"><li class="empty">再生を始めると、次の曲が表示されます。</li></ol></div>
 </aside>
+
+    <div class="boombox-area">
+      <div class="boombox">
+        <div class="handle" aria-hidden="true"></div>
+        <!-- 上段：銘板とカセット窓 -->
+        <div class="bb-head">
+          <div class="bb-logo"><span class="lamp"></span>STEREO RADIO CASSETTE<small>LYRICS DISPLAY ・ AUTO REVERSE</small></div>
+          <div class="deck-win" id="deckWin">
+            <div class="cassette" id="tilt">
+              <div class="cs-label">
+                <div class="cs-side">A</div>
+                <div class="cs-title"><span id="lcdTitle">NO TAPE</span></div>
+                <img id="cover" alt="アルバムのジャケット画像" crossorigin="anonymous">
+              </div>
+              <div class="cs-window">
+                <div class="reel l" id="reelL"><div class="tape"></div><div class="hub" id="hubL"></div></div>
+                <div class="tape-run"></div>
+                <div class="reel r" id="reelR"><div class="tape"></div><div class="hub" id="hubR"></div></div>
+              </div>
+            </div>
+            <div class="counter mono" title="再生時間"><span id="lcdTime">0:00</span></div>
+          </div>
+        </div>
+
+        <!-- 中段：スピーカーと表示窓（歌詞） -->
+        <div class="bb-mid">
+          <div class="speaker" id="spkL"><div class="cone"><i></i></div></div>
+          <div class="rcv-display">
+            <div class="rcv-head" id="meta">
+              <div class="rcv-status mono"><span id="rcvState">STANDBY</span><span id="rcvNo"></span></div>
+              <div id="title">プレイリストを選んでください</div>
+              <div id="artist">右の欄にURLを貼り付けて「再生」を押すと始まります</div>
+            </div>
+            <div class="lyr-tools" id="lyrTools">
+              <button class="chip sm" id="lyrPick" title="歌詞が見つからない・違う時に、候補から選んだり、検索したり、貼り付けたりできます">歌詞を探す・選ぶ</button>
+              <span class="sp"></span>
+              <span id="lyrOffWrap" class="grp">
+                <span class="note">歌詞のずれ</span>
+                <button class="chip sm" id="lyrEarlier" title="歌詞が遅れて表示される時に押す">早める</button>
+                <span id="lyrOff">±0秒</span>
+                <button class="chip sm" id="lyrLater" title="歌詞が先走って表示される時に押す">遅らせる</button>
+              </span>
+            </div>
+            <div class="lyr-cands hidden" id="lyrCands"></div>
+            <div class="lyr-scroll" id="lyrScroll">
+              <div id="lyrics"><div class="msg">再生を始めると、歌詞を探します。</div></div>
+              <div class="note" id="lyricsSrc"></div>
+            </div>
+          </div>
+          <div class="speaker" id="spkR"><div class="cone"><i></i></div></div>
+        </div>
+
+        <!-- 再生位置：太い帯。触れた位置の時刻が出る -->
+        <div class="seekrow mono">
+          <span id="posText">0:00</span>
+          <div class="scale"><input type="range" id="seekBar" min="0" max="1000" value="0" aria-label="再生位置" disabled></div>
+          <span id="durText">0:00</span>
+        </div>
+
+        <!-- 操作：よく使うものを中央に大きく -->
+        <div class="transport">
+          <div class="tr-left">
+            <button class="tbtn" id="quickAdd" title="再生中の曲をプレイリストに追加 (+)"><svg viewBox="0 0 24 24"><path d="M11 5h2v6h6v2h-6v6h-2v-6H5v-2h6z"/></svg><span>追加</span></button>
+            <button class="tbtn" id="copyLinkBtn" title="今の曲のSpotifyリンクをコピー" disabled><svg viewBox="0 0 24 24"><path d="M10.6 13.4a1 1 0 0 1 0-1.4l3.5-3.5a3 3 0 1 1 4.2 4.2l-2 2-1.4-1.4 2-2a1 1 0 1 0-1.4-1.4L12 13.4a1 1 0 0 1-1.4 0zm2.8-2.8a1 1 0 0 1 0 1.4l-3.5 3.5a3 3 0 1 1-4.2-4.2l2-2 1.4 1.4-2 2a1 1 0 1 0 1.4 1.4L12 10.6a1 1 0 0 1 1.4 0z"/></svg><span>リンク</span></button>
+            <a class="tbtn" id="openLink" href="#" target="_blank" rel="noopener" aria-disabled="true" title="Spotifyで開く"><svg viewBox="0 0 24 24"><path d="M14 3h7v7h-2V6.4l-9.3 9.3-1.4-1.4L17.6 5H14V3zM5 5h6v2H5v12h12v-6h2v8H3V5h2z"/></svg><span>Spotify</span></a>
+          </div>
+          <div class="tr-center" role="group" aria-label="再生の操作">
+            <button class="tog" id="shuffleBtn" aria-pressed="false" title="シャッフル (S)"><svg viewBox="0 0 24 24"><path d="M17 3l4 4-4 4V8h-2.6l-3.1 4.4L8.5 16H3v-2h4.5l2.9-4-2.9-4H3V4h5.5l3.1 4.4L14.4 6H17V3zm0 10l4 4-4 4v-3h-2.6l-2.2-3.1 1.2-1.7L14.4 15H17v-2z"/></svg><span>シャッフル</span></button>
+            <button class="key" id="prevBtn" aria-label="前の曲" title="前の曲 (P)"><svg viewBox="0 0 24 24"><path d="M6 5h2v14H6V5zm3.5 7L19 5v14l-9.5-7z"/></svg></button>
+            <button class="key play" id="toggleBtn" aria-label="再生" title="再生/一時停止 (スペース)">
+              <svg id="icoPlay" viewBox="0 0 24 24"><path d="M8 5v14l11-7L8 5z"/></svg>
+              <svg id="icoPause" class="hidden" viewBox="0 0 24 24"><path d="M6 5h4v14H6V5zm8 0h4v14h-4V5z"/></svg>
+            </button>
+            <button class="key" id="nextBtn" aria-label="次の曲" title="次の曲 (N)"><svg viewBox="0 0 24 24"><path d="M16 5h2v14h-2V5zM5 19V5l9.5 7L5 19z"/></svg></button>
+            <button class="tog badge" id="repeatBtn" data-mode="off" title="繰り返し (R)：押すたびに オフ→全曲→1曲"><svg viewBox="0 0 24 24"><path d="M7 7h10v3l4-4-4-4v3H5v6h2V7zm10 10H7v-3l-4 4 4 4v-3h12v-6h-2v4z"/></svg><span id="repLbl">繰り返し</span></button>
+          </div>
+          <div class="tr-right vol">
+            <button class="tbtn icon" id="muteBtn" title="消音 (M)"><svg viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3A4.5 4.5 0 0 0 14 8v8a4.5 4.5 0 0 0 2.5-4zM14 3.2v2.1a7 7 0 0 1 0 13.4v2.1a9 9 0 0 0 0-17.6z"/></svg></button>
+            <input type="range" id="volBar" min="0" max="100" value="80" aria-label="音量">
+            <span class="lbl"></span>
+            <button class="tbtn" id="immBtn" title="全画面表示 (F)"><svg viewBox="0 0 24 24"><path d="M4 4h6v2H6v4H4V4zm10 0h6v6h-2V6h-4V4zM4 14h2v4h4v2H4v-6zm14 0h2v6h-6v-2h4v-4z"/></svg><span>全画面</span></button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 以前の部品との互換用（画面には出さない） -->
+  <div class="hidden" aria-hidden="true">
+    <div id="shelf"></div><button id="listBtn"></button><button id="stopBtn"></button><button id="ejectBtn"></button><div id="knob"></div>
+    <div id="stage"></div><div id="coverWrap"></div><img id="labelImg" alt=""><div id="spin"></div><div id="arm2"></div>
+    <button id="deckStart"></button><div id="platterWrap"></div><button id="vinylBtn"></button><div id="scrim"></div>
+  </div>
+</div>
 
 <div class="imm-bar">
   <button class="ghost" id="immSwitch">歌詞を大きく</button>
@@ -2056,6 +2232,89 @@ function showApp(){
   if(store.get("refresh")) showApp();
   log("戻り先URL（開発者画面に登録する値）: " + REDIRECT_URI, true);
 })();
+// ================= 操作性の工夫 =================
+// キーにショートカットを刻印
+[["prevBtn","P"],["toggleBtn","Space"],["nextBtn","N"],["ejectBtn","L"],["quickAdd","+"]].forEach(([id, k]) => $(id).dataset.k = k);
+
+// 棚：マウスのホイールで横に送る
+$("shelf").addEventListener("wheel", e => {
+  if(Math.abs(e.deltaY) > Math.abs(e.deltaX)){ e.preventDefault(); $("shelf").scrollLeft += e.deltaY; }
+}, { passive:false });
+
+// 目盛り：マウスを重ねた位置の時刻を表示
+(() => {
+  const sc = document.querySelector(".seekrow .scale") || document.querySelector(".dial .scale");
+  const tip = document.createElement("div"); tip.className = "dial-tip mono"; sc.appendChild(tip);
+  sc.addEventListener("mousemove", e => {
+    if(dur <= 0){ tip.textContent = "—"; return; }
+    const r = sc.getBoundingClientRect(), x = Math.max(0, Math.min(1, (e.clientX - r.left) / r.width));
+    tip.style.left = (x * 100) + "%"; tip.textContent = fmt(x * dur);
+  });
+})();
+
+// 音量を数字でも表示
+(() => {
+  const v = document.createElement("span"); v.id = "volVal";
+  document.querySelector(".vol .lbl").prepend(v);
+  const show = () => { v.textContent = String($("volBar").value).padStart(2, "0"); };
+  const orig = applyVolume;
+  applyVolume = function(){ orig(); show(); };
+  $("volBar").addEventListener("input", show);
+  show();
+})();
+
+// 「+」キー：再生中の曲を追加。「?」キー：操作の一覧を開く
+document.addEventListener("keydown", e => {
+  const tag = (e.target.tagName || "").toLowerCase();
+  if(tag === "input" || tag === "textarea" || e.ctrlKey || e.metaKey || e.altKey) return;
+  if(e.key === "?"){ e.preventDefault(); $("menu").classList.remove("hidden"); const d = document.querySelector("#menu details"); if(d) d.open = true; }
+  if(e.key === "+"){ e.preventDefault(); $("quickAdd").click(); }
+});
+
+// はじめての時：表示窓に案内を出す
+function showWelcome(){
+  if(curTrack) return;
+  const box = $("lyrics"); box.className = "welcome"; box.textContent = "";
+  const m = document.createElement("div"); m.className = "msg";
+  m.innerHTML = "テープが入っていません。<br>「選曲」キーを押してプレイリストを選ぶか、前回のプレイリストをそのまま再生できます。";
+  const cta = document.createElement("div"); cta.className = "cta";
+  const a = document.createElement("button"); a.className = "primary sm"; a.textContent = "プレイリストを選ぶ"; a.onclick = () => openDrawer("list");
+  cta.appendChild(a);
+  if(store.get("lastPlaylist")){ const b = document.createElement("button"); b.className = "chip sm"; b.textContent = "前回のプレイリストを再生"; b.onclick = () => startPlayback(store.get("lastPlaylist")); cta.appendChild(b); }
+  m.appendChild(cta); box.appendChild(m);
+}
+showWelcome();
+// ================= 配置の見直しに合わせた操作 =================
+// 左の欄は常に表示。起動時は曲一覧を開く
+openDrawer("list");
+// 「操作の一覧」ボタン
+$("helpBtn").onclick = () => { $("menu").classList.remove("hidden"); const d = document.querySelector("#menu details"); if(d) d.open = true; };
+// 再生位置の帯：進み具合を塗る
+const _setRange = setRange;
+setRange = function(el){ _setRange(el); if(el.id === "seekBar") el.parentElement.style.setProperty("--sp", el.value / el.max); };
+// 繰り返しの状態を文字でも表示
+new MutationObserver(() => {
+  const m = $("repeatBtn").dataset.mode;
+  $("repLbl").textContent = m === "track" ? "1曲くり返し" : m === "context" ? "全曲くり返し" : "繰り返し";
+}).observe($("repeatBtn"), { attributes:true, attributeFilter:["data-mode"] });
+// 曲が替わったら、左の一覧で今の曲が見えるように送る（一覧を触っている間は動かさない）
+let sideHover = false;
+$("drawer").addEventListener("pointerenter", () => sideHover = true);
+$("drawer").addEventListener("pointerleave", () => sideHover = false);
+let lastMarked = "";
+const _mark = markCurrentInPl;
+markCurrentInPl = function(){
+  _mark();
+  if(curTrack && curTrack.uri !== lastMarked && !sideHover){
+    const li = document.querySelector("#plList li.current");
+    if(li){ lastMarked = curTrack.uri; li.scrollIntoView({ block:"nearest", behavior:"smooth" }); }
+  }
+};
+// 左の欄は閉じない（Lキーなどは曲一覧タブへの切り替えとして扱う）
+closeDrawer = function(){};
+// カセット窓を押しても再生／一時停止
+$("deckWin").addEventListener("click", () => $("toggleBtn").click());
+$("deckWin").style.cursor = "pointer"; $("deckWin").title = "押すと再生／一時停止";
 
 </script>
 <script src="https://sdk.scdn.co/spotify-player.js"></script>
